@@ -22,6 +22,12 @@
 - Ensure in RTL the reload for each element should be on top right.
 
 ## Recent Changes (Last 20)
+### 2026-04-08T22:23:15+03:30
+- Changed files: `src/panel/panel.js`, `src/panel/panel.css`, `src/help/help.css`
+- Summary: Replaced layout-breaking panel zoom with variable-based sizing, made grid responsive, forced deterministic list/grid/minimal class switching, improved top refresh rebuild behavior, fixed card tool placement, and hardened help-page light-theme readability.
+- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
+<!-- fingerprint:a8bf5956db01 -->
+
 ### 2026-04-08T22:11:02+03:30
 - Changed files: `src/panel/panel.css`, `src/panel/panel.js`
 - Summary: Reworked panel scaling away from transform-based layout inflation, constrained grid to stable columns, removed card minimum-height forcing, and forced rebuild follow-up refreshes when switching minimal/layout modes.
@@ -131,4 +137,4 @@
 <!-- fingerprint:f0a6a8e2fd7b -->
 
 ## Last Updated
-- 2026-04-08T22:11:02+03:30
+- 2026-04-08T22:23:15+03:30

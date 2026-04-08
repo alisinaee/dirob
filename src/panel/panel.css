@@ -1,6 +1,5 @@
 :root {
   color-scheme: dark;
-  --ui-scale: 1;
   --bg: #111317;
   --panel: #171b21;
   --panel-alt: #1d232b;
@@ -13,6 +12,11 @@
   --good: #67d48f;
   --warn: #f4c152;
   --bad: #ff7a7a;
+  --panel-font-size: 14px;
+  --card-padding: 12px;
+  --thumb-size: 58px;
+  --tool-size: 30px;
+  --tool-radius: 10px;
 }
 
 :root[data-theme="light"] {
@@ -54,10 +58,9 @@ body {
   background: linear-gradient(180deg, #111317 0%, #0d1014 100%);
   color: var(--text);
   font-family: "SF Pro Display", "Segoe UI", Tahoma, sans-serif;
-  font-size: 14px;
+  font-size: var(--panel-font-size);
   overflow: hidden;
   height: 100vh;
-  zoom: var(--ui-scale);
 }
 
 :root[data-theme="light"] body {
@@ -472,7 +475,7 @@ html[dir="ltr"] .switch-row.is-active .switch-thumb {
 
 .list.is-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
   align-content: start;
   align-items: start;
 }
@@ -512,7 +515,7 @@ html[dir="ltr"] .switch-row.is-active .switch-thumb {
 .list.is-minimal .item-card {
   gap: 8px;
   padding: 10px;
-  min-height: 138px;
+  min-height: 112px;
 }
 
 .list.is-minimal .item-top {
@@ -592,7 +595,7 @@ html[dir="ltr"] .switch-row.is-active .switch-thumb {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 12px;
+  padding: var(--card-padding);
   transition: box-shadow 160ms ease, border-color 160ms ease, background-color 160ms ease;
   min-width: 0;
   overflow: hidden;
@@ -603,16 +606,17 @@ html[dir="ltr"] .switch-row.is-active .switch-thumb {
 .item-tools {
   position: absolute;
   inset-block-start: 10px;
-  inset-inline-end: 10px;
+  right: 10px;
+  left: auto;
   z-index: 2;
   display: inline-flex;
   gap: 6px;
 }
 
 .item-tool {
-  width: 30px;
-  height: 30px;
-  border-radius: 10px;
+  width: var(--tool-size);
+  height: var(--tool-size);
+  border-radius: var(--tool-radius);
   font-size: 0.86rem;
 }
 
@@ -640,7 +644,7 @@ html[dir="ltr"] .switch-row.is-active .switch-thumb {
   align-items: center;
   gap: 8px;
   margin-bottom: 6px;
-  padding-inline-end: 72px;
+  padding-inline-end: calc(var(--tool-size) * 2 + 22px);
 }
 
 .item-card.is-visible {
@@ -668,9 +672,9 @@ html[dir="ltr"] .switch-row.is-active .switch-thumb {
 
 .thumb {
   position: relative;
-  flex: 0 0 58px;
-  width: 58px;
-  height: 58px;
+  flex: 0 0 var(--thumb-size);
+  width: var(--thumb-size);
+  height: var(--thumb-size);
   border-radius: 16px;
   overflow: hidden;
   background: linear-gradient(135deg, #202733 0%, #141922 100%);
@@ -774,6 +778,7 @@ html[dir="ltr"] .switch-row.is-active .switch-thumb {
   line-height: 1.65;
   min-width: 0;
   overflow-wrap: anywhere;
+  word-break: break-word;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -933,5 +938,11 @@ html[dir="ltr"] .switch-row.is-active .switch-thumb {
 
   .paired-card:last-child .segmented-control {
     grid-template-columns: 38px minmax(0, 1fr) 38px;
+  }
+}
+
+@media (min-width: 620px) {
+  .list.is-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

@@ -72,7 +72,23 @@ body {
 :root[data-theme="light"] .hero,
 :root[data-theme="light"] .card,
 :root[data-theme="light"] .action-btn {
-  background: rgba(255, 255, 255, 0.96);
+  background: #ffffff;
+}
+
+:root[data-theme="light"] .hero h1,
+:root[data-theme="light"] .card h2 {
+  color: #121721;
+}
+
+:root[data-theme="light"] .hero p,
+:root[data-theme="light"] .card p,
+:root[data-theme="light"] .card li {
+  color: #4d5d73;
+}
+
+:root[data-theme="light"] .action-btn:hover {
+  background: #fff1e7;
+  color: #121721;
 }
 
 :root[data-theme="light"] pre {

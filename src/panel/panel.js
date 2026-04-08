@@ -185,6 +185,7 @@
   let lastPanelFocusNonce = 0;
   let panelScrollHoldUntil = 0;
   let isProgrammaticScroll = false;
+  let pendingSoftRefreshTimer = 0;
 
   boot().catch((error) => {
     logger.error("panel", "boot_failed", {
@@ -217,18 +218,13 @@
 
   function bindEvents() {
     reloadAllButton.addEventListener("click", async () => {
-      lastStructureFingerprint = "";
+      forceRebuild();
       await chrome.runtime.sendMessage({
         type: "DIROB_RELOAD_ALL"
       });
       logger.info("panel", "reload_all_clicked");
       await refreshState();
-      window.setTimeout(() => {
-        refreshState().catch(() => {});
-      }, 450);
-      window.setTimeout(() => {
-        refreshState().catch(() => {});
-      }, 1200);
+      scheduleSoftRefresh(550);
     });
 
     toggleSettingsButton.addEventListener("click", async () => {
@@ -288,11 +284,8 @@
         type: "DIROB_SET_MINIMAL_VIEW",
         payload: { enabled }
       });
-      lastStructureFingerprint = "";
+      forceRebuild();
       await refreshState();
-      window.setTimeout(() => {
-        refreshState().catch(() => {});
-      }, 250);
     });
 
     debugButton.addEventListener("click", async () => {
@@ -327,11 +320,8 @@
         type: "DIROB_SET_LAYOUT_MODE",
         payload: { layoutMode: "list" }
       });
-      lastStructureFingerprint = "";
+      forceRebuild();
       await refreshState();
-      window.setTimeout(() => {
-        refreshState().catch(() => {});
-      }, 250);
     });
 
     layoutGridButton.addEventListener("click", async () => {
@@ -339,11 +329,8 @@
         type: "DIROB_SET_LAYOUT_MODE",
         payload: { layoutMode: "grid" }
       });
-      lastStructureFingerprint = "";
+      forceRebuild();
       await refreshState();
-      window.setTimeout(() => {
-        refreshState().catch(() => {});
-      }, 250);
     });
 
     languageButton.addEventListener("click", async () => {
@@ -352,7 +339,7 @@
         type: "DIROB_SET_LANGUAGE",
         payload: { language }
       });
-      lastStructureFingerprint = "";
+      forceRebuild();
       await refreshState();
     });
 
@@ -361,7 +348,7 @@
         type: "DIROB_ADJUST_FONT_SCALE",
         payload: { delta: -1 }
       });
-      lastStructureFingerprint = "";
+      forceRebuild();
       await refreshState();
     });
 
@@ -370,7 +357,7 @@
         type: "DIROB_ADJUST_FONT_SCALE",
         payload: { delta: 1 }
       });
-      lastStructureFingerprint = "";
+      forceRebuild();
       await refreshState();
     });
 
@@ -452,8 +439,13 @@
     document.documentElement.lang = language;
     document.documentElement.dir = language === "fa" ? "rtl" : "ltr";
     document.documentElement.dataset.theme = getEffectiveTheme(state?.themeMode);
-    const scaleValue = 1 + ((state?.fontScale || 0) * 0.1);
-    document.body.style.setProperty("--ui-scale", String(Math.max(0.55, Math.min(1.8, scaleValue))));
+    const fontScale = Number.isFinite(state?.fontScale) ? state.fontScale : 0;
+    document.body.style.setProperty("--font-scale-step", String(fontScale));
+    document.body.style.setProperty("--panel-font-size", `${clamp(14 + fontScale, 11, 22)}px`);
+    document.body.style.setProperty("--card-padding", `${clamp(12 + fontScale, 8, 20)}px`);
+    document.body.style.setProperty("--thumb-size", `${clamp(58 + fontScale * 4, 42, 84)}px`);
+    document.body.style.setProperty("--tool-size", `${clamp(30 + fontScale * 2, 24, 40)}px`);
+    document.body.style.setProperty("--tool-radius", `${clamp(10 + fontScale, 8, 14)}px`);
 
     settingsTitle.textContent = translation.settingsTitle;
     toggleSettingsButton.title = translation.settingsOpen;
@@ -491,9 +483,11 @@
     layoutGridButton.classList.toggle("is-active", state?.layoutMode === "grid");
     settingsPanel.classList.toggle("is-open", Boolean(state?.settingsOpen));
     settingsPanel.setAttribute("aria-hidden", String(!state?.settingsOpen));
-    itemsList.classList.toggle("is-grid", state?.layoutMode === "grid");
-    itemsList.classList.toggle("is-list", state?.layoutMode !== "grid");
-    itemsList.classList.toggle("is-minimal", Boolean(state?.minimalViewEnabled));
+    itemsList.classList.remove("is-grid", "is-list", "is-minimal");
+    itemsList.classList.add(state?.layoutMode === "grid" ? "is-grid" : "is-list");
+    if (state?.minimalViewEnabled) {
+      itemsList.classList.add("is-minimal");
+    }
 
     pageModeText.textContent = page?.isSupported
       ? t(language, "modeTitle", { source: siteLabel, target: targetLabel })
@@ -804,6 +798,25 @@
     }
 
     programmaticScrollTo(node);
+  }
+
+  function forceRebuild() {
+    lastStructureFingerprint = "";
+  }
+
+  function scheduleSoftRefresh(delayMs) {
+    if (pendingSoftRefreshTimer) {
+      window.clearTimeout(pendingSoftRefreshTimer);
+    }
+    pendingSoftRefreshTimer = window.setTimeout(() => {
+      forceRebuild();
+      refreshState().catch(() => {});
+      pendingSoftRefreshTimer = 0;
+    }, delayMs);
+  }
+
+  function clamp(value, min, max) {
+    return Math.min(max, Math.max(min, value));
   }
 
   function findPageViewSourceId(page, state) {
