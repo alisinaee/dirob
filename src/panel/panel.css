@@ -108,7 +108,7 @@ body {
 .brand-block {
   display: flex;
   align-items: center;
-  flex-direction: row-reverse;
+  flex-direction: row;
   gap: 12px;
   min-width: 0;
   flex: 1 1 auto;
@@ -123,6 +123,19 @@ html[dir="ltr"] .brand-block {
 
 .brand-block > div {
   min-width: 0;
+  order: 1;
+}
+
+html[dir="rtl"] .brand-mark {
+  order: 2;
+}
+
+html[dir="ltr"] .brand-mark {
+  order: 1;
+}
+
+html[dir="ltr"] .brand-block > div {
+  order: 2;
 }
 
 .brand-mark {
