@@ -22,6 +22,12 @@
 - Ensure in RTL the reload for each element should be on top right.
 
 ## Recent Changes (Last 20)
+### 2026-04-08T22:11:02+03:30
+- Changed files: `src/panel/panel.css`, `src/panel/panel.js`
+- Summary: Reworked panel scaling away from transform-based layout inflation, constrained grid to stable columns, removed card minimum-height forcing, and forced rebuild follow-up refreshes when switching minimal/layout modes.
+- Behavior impact: Recorded code-level deltas for future AI context.
+<!-- fingerprint:bfe827b11b82 -->
+
 ### 2026-04-08T22:06:17+03:30
 - Changed files: `src/panel/panel.js`, `src/panel/panel.css`, `src/help/help.css`
 - Summary: Improved light-theme contrast for the help page and panel hover states, forced top refresh to rebuild panel state with delayed follow-up refreshes, clamped item tools to the right side, and improved card text wrapping/visibility.
@@ -125,4 +131,4 @@
 <!-- fingerprint:f0a6a8e2fd7b -->
 
 ## Last Updated
-- 2026-04-08T22:06:17+03:30
+- 2026-04-08T22:11:02+03:30

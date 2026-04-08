@@ -57,6 +57,7 @@ body {
   font-size: 14px;
   overflow: hidden;
   height: 100vh;
+  zoom: var(--ui-scale);
 }
 
 :root[data-theme="light"] body {
@@ -65,22 +66,13 @@ body {
 
 .panel-shell {
   display: flex;
-  height: calc(100vh / var(--ui-scale));
-  min-height: calc(100vh / var(--ui-scale));
+  height: 100vh;
+  min-height: 100vh;
   flex-direction: column;
   gap: 12px;
   padding: 14px;
-  width: calc(100% / var(--ui-scale));
-  transform: scale(var(--ui-scale));
+  width: 100%;
   overflow: hidden;
-}
-
-html[dir="rtl"] .panel-shell {
-  transform-origin: top right;
-}
-
-html[dir="ltr"] .panel-shell {
-  transform-origin: top left;
 }
 
 .panel-header,
@@ -480,8 +472,9 @@ html[dir="ltr"] .switch-row.is-active .switch-thumb {
 
 .list.is-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   align-content: start;
+  align-items: start;
 }
 
 .list.is-grid .detail-group {
@@ -519,7 +512,7 @@ html[dir="ltr"] .switch-row.is-active .switch-thumb {
 .list.is-minimal .item-card {
   gap: 8px;
   padding: 10px;
-  min-height: 122px;
+  min-height: 138px;
 }
 
 .list.is-minimal .item-top {
@@ -604,7 +597,7 @@ html[dir="ltr"] .switch-row.is-active .switch-thumb {
   min-width: 0;
   overflow: hidden;
   width: 100%;
-  min-height: 164px;
+  min-height: 0;
 }
 
 .item-tools {
@@ -931,6 +924,10 @@ html[dir="ltr"] .switch-row.is-active .switch-thumb {
   .switch-grid,
   .settings-grid--paired,
   .price-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .list.is-grid {
     grid-template-columns: 1fr;
   }
 

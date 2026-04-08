@@ -288,7 +288,11 @@
         type: "DIROB_SET_MINIMAL_VIEW",
         payload: { enabled }
       });
+      lastStructureFingerprint = "";
       await refreshState();
+      window.setTimeout(() => {
+        refreshState().catch(() => {});
+      }, 250);
     });
 
     debugButton.addEventListener("click", async () => {
@@ -323,7 +327,11 @@
         type: "DIROB_SET_LAYOUT_MODE",
         payload: { layoutMode: "list" }
       });
+      lastStructureFingerprint = "";
       await refreshState();
+      window.setTimeout(() => {
+        refreshState().catch(() => {});
+      }, 250);
     });
 
     layoutGridButton.addEventListener("click", async () => {
@@ -331,7 +339,11 @@
         type: "DIROB_SET_LAYOUT_MODE",
         payload: { layoutMode: "grid" }
       });
+      lastStructureFingerprint = "";
       await refreshState();
+      window.setTimeout(() => {
+        refreshState().catch(() => {});
+      }, 250);
     });
 
     languageButton.addEventListener("click", async () => {
