@@ -116,7 +116,8 @@
       logHelperConnected: "ثبت لاگ محلی وصل است",
       logHelperDisconnected: "ثبت لاگ محلی قطع است",
       logPathReady: "لاگ‌ها در {path} ذخیره می‌شوند.",
-      logPathDisconnected: "برای ذخیره لاگ‌ها `./run-dirob-helper` را در ریشه پروژه اجرا کنید.",
+      logPathDisconnected:
+        "برای راه‌اندازی خودکار (یک‌بار): `./run-dirob-helper --install-autostart` · اجرای دستی: `./run-dirob-helper`",
       locateItem: "رفتن به محصول",
       locateItemHint: "رفتن به همین محصول در صفحه اصلی و هایلایت کردن آن.",
       decreaseSize: "کوچک‌تر کردن اندازه",
@@ -220,7 +221,8 @@
       logHelperConnected: "Local logger connected",
       logHelperDisconnected: "Local logger disconnected",
       logPathReady: "Logs are written to {path}.",
-      logPathDisconnected: "Run `./run-dirob-helper` in the project root to save logs.",
+      logPathDisconnected:
+        "One-time auto-start: `./run-dirob-helper --install-autostart` · manual run: `./run-dirob-helper`",
       locateItem: "Locate item",
       locateItemHint: "Scroll to this product on the real page and highlight it.",
       decreaseSize: "Decrease size",

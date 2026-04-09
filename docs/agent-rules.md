@@ -25,8 +25,15 @@
 - Ensure settings tooltips explain feature behavior (not just label text), and guide/status chips must expose explanatory tooltips.
 - Ensure compact item action icons use site-aware symbols (D/T, search+D/T, Google) with non-heavy reload iconography.
 - Ensure size scale range remains constrained to -5 through +5.
+- Ensure logger setup supports one-time autostart installation so users avoid per-session manual helper launch.
 
 ## Recent Changes (Last 20)
+### 2026-04-09T10:41:09+03:30
+- Changed files: `run-dirob-helper`, `src/panel/panel.js`, `README.md`
+- Summary: Added helper lifecycle commands (`--install-autostart`, `--uninstall-autostart`, `--status`) backed by a macOS LaunchAgent for persistent logger startup, and updated panel/README guidance to prefer one-time autostart setup over repeated manual runs.
+- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
+<!-- fingerprint:0ea5ee888cfa -->
+
 ### 2026-04-09T10:37:27+03:30
 - Changed files: `src/background.js`
 - Summary: Tightened global font-scale clamp to enforce a hard UI range of `-5..+5` for panel size adjustments.
@@ -141,11 +148,5 @@
 - Behavior impact: Recorded code-level deltas for future AI context.
 <!-- fingerprint:151bc41a0dc9 -->
 
-### 2026-04-09T09:20:03+03:30
-- Changed files: `src/panel/panel.css`
-- Summary: Removed panel item-title clamping and freed minimal-mode header width so list cards can show full product names in both normal and minimal views.
-- Behavior impact: Recorded code-level deltas for future AI context.
-<!-- fingerprint:823d176d77e2 -->
-
 ## Last Updated
-- 2026-04-09T10:37:27+03:30
+- 2026-04-09T10:41:09+03:30
