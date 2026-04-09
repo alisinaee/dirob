@@ -31,8 +31,15 @@
 - Ensure confidence is displayed adjacent to status in the top meta row across all layouts, and remove long subtitle chips below titles.
 - Ensure Persian UI text uses Vazir-family typography across panel/help/popup/sidebar surfaces.
 - Ensure guide-number click navigation adds a visible blink/pulse animation on the focused panel item after scroll.
+- Ensure guide-jump blink starts only after programmatic scroll settles.
 
 ## Recent Changes (Last 20)
+### 2026-04-09T10:59:34+03:30
+- Changed files: `src/panel/panel.js`
+- Summary: Delayed guide-jump blink trigger until programmatic scroll completion by adding a scroll-done callback path in `programmaticScrollTo`.
+- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
+<!-- fingerprint:e8c35ce46e42 -->
+
 ### 2026-04-09T10:57:37+03:30
 - Changed files: `src/panel/panel.js`, `src/panel/panel.css`
 - Summary: Added a guide-jump blink animation path (`is-guide-jump`) triggered when panel focus is requested from website guide-number clicks, including a two-pulse overlay effect for clear target emphasis.
@@ -147,11 +154,5 @@
 - Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
 <!-- fingerprint:8b83e9dbba7c -->
 
-### 2026-04-09T09:49:25+03:30
-- Changed files: `src/panel/panel.css`
-- Summary: Pinned brand header layout so the Dirob icon always stays to the right of title/subtitle in both FA and EN, while preserving language-specific text direction/alignment inside the text block.
-- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
-<!-- fingerprint:e040e9b9a8c6 -->
-
 ## Last Updated
-- 2026-04-09T10:57:37+03:30
+- 2026-04-09T10:59:34+03:30

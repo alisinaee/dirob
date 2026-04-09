@@ -1014,9 +1014,10 @@
     if (!node) {
       return;
     }
-    programmaticScrollTo(node);
+    programmaticScrollTo(node, () => {
+      triggerGuideJumpBlink(node);
+    });
     node.classList.add("is-page-focus");
-    triggerGuideJumpBlink(node);
   }
 
   function triggerGuideJumpBlink(node) {
@@ -1055,7 +1056,7 @@
     }, 1900);
   }
 
-  function programmaticScrollTo(node) {
+  function programmaticScrollTo(node, onDone) {
     isProgrammaticScroll = true;
     node.scrollIntoView({
       block: "nearest",
@@ -1064,7 +1065,10 @@
     window.clearTimeout(programmaticScrollTo._timerId);
     programmaticScrollTo._timerId = window.setTimeout(() => {
       isProgrammaticScroll = false;
-    }, 320);
+      if (typeof onDone === "function") {
+        onDone();
+      }
+    }, 360);
   }
 
   function getItemFingerprint(entry, state, language) {
