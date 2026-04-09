@@ -30,8 +30,15 @@
 - Ensure search-on-site and reload icons stay visually larger/heavier than default compact icon sizing.
 - Ensure confidence is displayed adjacent to status in the top meta row across all layouts, and remove long subtitle chips below titles.
 - Ensure Persian UI text uses Vazir-family typography across panel/help/popup/sidebar surfaces.
+- Ensure guide-number click navigation adds a visible blink/pulse animation on the focused panel item after scroll.
 
 ## Recent Changes (Last 20)
+### 2026-04-09T10:57:37+03:30
+- Changed files: `src/panel/panel.js`, `src/panel/panel.css`
+- Summary: Added a guide-jump blink animation path (`is-guide-jump`) triggered when panel focus is requested from website guide-number clicks, including a two-pulse overlay effect for clear target emphasis.
+- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
+<!-- fingerprint:926ccdad4de7 -->
+
 ### 2026-04-09T10:55:33+03:30
 - Changed files: `src/panel/panel.css`, `src/help/help.css`, `src/sidebar.css`, `src/popup/popup.html`
 - Summary: Added Persian-language font overrides to use the Vazir family stack (`Vazir`, `Vazirmatn`, fallbacks) while preserving the existing English font stack.
@@ -146,11 +153,5 @@
 - Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
 <!-- fingerprint:e040e9b9a8c6 -->
 
-### 2026-04-09T09:43:34+03:30
-- Changed files: `src/panel/panel.css`
-- Summary: Fixed confusing light-theme switch states (clear gray OFF vs orange ON) while keeping a single active thumb direction across languages, and prevented list/grid card shrink-collapse by making item cards non-shrinking in the scroll list.
-- Behavior impact: Recorded code-level deltas for future AI context.
-<!-- fingerprint:4b95bf2d2f31 -->
-
 ## Last Updated
-- 2026-04-09T10:55:33+03:30
+- 2026-04-09T10:57:37+03:30

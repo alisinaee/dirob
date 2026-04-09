@@ -266,6 +266,7 @@
   let panelScrollHoldUntil = 0;
   let isProgrammaticScroll = false;
   let pendingSoftRefreshTimer = 0;
+  const guideJumpTimers = new WeakMap();
 
   boot().catch((error) => {
     logger.error("panel", "boot_failed", {
@@ -1015,6 +1016,25 @@
     }
     programmaticScrollTo(node);
     node.classList.add("is-page-focus");
+    triggerGuideJumpBlink(node);
+  }
+
+  function triggerGuideJumpBlink(node) {
+    if (!node) {
+      return;
+    }
+    const activeTimer = guideJumpTimers.get(node);
+    if (activeTimer) {
+      window.clearTimeout(activeTimer);
+    }
+    node.classList.remove("is-guide-jump");
+    void node.offsetWidth;
+    node.classList.add("is-guide-jump");
+    const timerId = window.setTimeout(() => {
+      node.classList.remove("is-guide-jump");
+      guideJumpTimers.delete(node);
+    }, 1300);
+    guideJumpTimers.set(node, timerId);
   }
 
   function isNodeMostlyVisible(node, container) {
