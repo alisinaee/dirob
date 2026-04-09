@@ -29,6 +29,9 @@
   let navigationListenersBound = false;
   let lastKnownHref = location.href;
   let locationPollTimer = null;
+  let navigationRescanTimer = null;
+  let navigationRescanAttempts = 0;
+  let navigationRescanNonce = 0;
 
   boot().catch(() => {});
 
@@ -408,8 +411,9 @@
         return;
       }
       lastKnownHref = location.href;
+      resetLocalState();
       notifyPageState().catch(() => {});
-      refreshCards().catch(() => {});
+      scheduleNavigationRescan();
     };
 
     history.pushState = function patchedPushState(...args) {
@@ -428,6 +432,38 @@
     window.addEventListener("hashchange", handleLocationChange, true);
 
     locationPollTimer = window.setInterval(handleLocationChange, 800);
+  }
+
+  function scheduleNavigationRescan() {
+    navigationRescanNonce += 1;
+    const nonce = navigationRescanNonce;
+    navigationRescanAttempts = 0;
+    if (navigationRescanTimer) {
+      window.clearTimeout(navigationRescanTimer);
+      navigationRescanTimer = null;
+    }
+
+    const runAttempt = async () => {
+      if (nonce !== navigationRescanNonce) {
+        return;
+      }
+      navigationRescanAttempts += 1;
+      await notifyPageState();
+      await refreshCards();
+      const hasRows = rowState.size > 0;
+      const shouldContinue = navigationRescanAttempts < 8 && (!pageContext?.isSupported || !hasRows);
+      if (!shouldContinue) {
+        navigationRescanTimer = null;
+        return;
+      }
+      navigationRescanTimer = window.setTimeout(() => {
+        runAttempt().catch(() => {});
+      }, 280);
+    };
+
+    navigationRescanTimer = window.setTimeout(() => {
+      runAttempt().catch(() => {});
+    }, 220);
   }
 
   function ensureStorageListener() {

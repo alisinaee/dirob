@@ -41,8 +41,15 @@
 - Ensure Torob SPA/listing URL changes trigger immediate page-state resync to avoid carrying stale products across categories.
 - Ensure background row sync removes untouched source IDs (instead of only marking invisible) to prevent stale panel items and duplicate guide mappings.
 - Ensure debug mode does not render per-item raw JSON/debug payload blocks inside result cards.
+- Ensure SPA URL changes trigger a short auto-rescan retry cycle so Dirob refreshes without manual page reload.
 
 ## Recent Changes (Last 20)
+### 2026-04-09T12:25:02+03:30
+- Changed files: `src/content.js`
+- Summary: Added navigation rescan retries after URL changes (state reset + delayed repeated `notifyPageState/refreshCards`) so SPA transitions settle and Dirob updates automatically without manual refresh.
+- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
+<!-- fingerprint:866dc4af6581 -->
+
 ### 2026-04-09T12:05:45+03:30
 - Changed files: `src/panel/panel.js`
 - Summary: Removed per-item raw debug payload rendering from panel cards while keeping debug mode available for diagnostics/status behavior.
@@ -157,11 +164,5 @@
 - Behavior impact: Recorded code-level deltas for future AI context.
 <!-- fingerprint:85e49a7a21f3 -->
 
-### 2026-04-09T10:06:33+03:30
-- Changed files: `src/panel/panel.html`, `src/panel/panel.css`
-- Summary: Moved compact language and theme icon buttons into the settings top bar beside the close button, removing their separate row to save vertical space.
-- Behavior impact: Recorded code-level deltas for future AI context.
-<!-- fingerprint:06e8b6471d97 -->
-
 ## Last Updated
-- 2026-04-09T12:05:45+03:30
+- 2026-04-09T12:25:02+03:30
