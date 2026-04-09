@@ -9,6 +9,7 @@
   const settingsBody = document.querySelector("[data-settings-body]");
   const settingsTitle = document.querySelector("[data-settings-title]");
   const settingsHelp = document.querySelector("[data-settings-help]");
+  const logRow = document.querySelector(".log-row");
   const layoutLabel = document.querySelector("[data-layout-label]");
   const fontLabel = document.querySelector("[data-font-label]");
   const logMetaText = document.querySelector("[data-log-meta]");
@@ -31,6 +32,7 @@
   const layoutGridButton = document.querySelector('[data-action="set-layout-grid"]');
   const fontDownButton = document.querySelector('[data-action="font-down"]');
   const fontUpButton = document.querySelector('[data-action="font-up"]');
+  const exportLogsButton = document.querySelector('[data-action="export-logs"]');
   const clearLogsButton = document.querySelector('[data-action="clear-logs"]');
   const switchLabels = {
     selection: document.querySelector('[data-switch-label="selection"]'),
@@ -50,6 +52,8 @@
       settingsSelection:
         "حالت انتخاب عنصر روشن است: فقط محصولی که روی آن می‌روید یا فوکوس می‌کنید نمایش داده می‌شود.",
       logsMeta: "تعداد لاگ‌ها: {count}",
+      exportLogs: "خروجی لاگ",
+      exportLogsHint: "خروجی گرفتن از لاگ‌های دیباگ این جلسه برای ارسال گزارش.",
       clearLogs: "پاک کردن",
       clearLogsHint: "پاک کردن لاگ‌های ثبت‌شده در همین جلسه از پنل.",
       reloadAll: "بارگذاری دوباره همه",
@@ -135,7 +139,8 @@
         "کارت‌ها فشرده می‌شوند و دکمه‌های هر آیتم به حالت آیکونی نمایش داده می‌شود تا فضای کمتری بگیرد.",
       guideNumbersHint:
         "شماره راهنما کنار محصولات روی صفحه و داخل پنل نمایش داده می‌شود تا تطبیق آیتم‌ها ساده باشد.",
-      autoLogsHint: "وقایع توسعه Dirob به لاگ محلی ارسال می‌شود.",
+      autoLogsHint: "وقایع توسعه Dirob به لاگ محلی ارسال می‌شود (فقط وقتی دیباگ روشن است).",
+      autoLogsHintDebugOff: "برای فعال شدن ثبت خودکار لاگ، اول دیباگ را روشن کنید.",
       debugHint: "اطلاعات تشخیصی بیشتری برای هر آیتم نمایش داده می‌شود.",
       layoutListHint: "نمایش نتایج به‌صورت لیست تک‌ستونی.",
       layoutGridHint: "نمایش نتایج به‌صورت گرید چندستونی.",
@@ -158,6 +163,8 @@
       settingsSelection:
         "Element select mode is on: only the product under hover/focus is shown.",
       logsMeta: "Logs: {count}",
+      exportLogs: "Export",
+      exportLogsHint: "Export this session's debug logs so they can be shared for issue reports.",
       clearLogs: "Clear",
       clearLogsHint: "Clear logs captured in this panel session.",
       reloadAll: "Reload All",
@@ -242,7 +249,8 @@
         "Compacts cards and switches per-item actions to icon buttons to save vertical space.",
       guideNumbersHint:
         "Shows matching guide numbers on the page and in the panel so items are easier to correlate.",
-      autoLogsHint: "Send Dirob development events to local logs.",
+      autoLogsHint: "Send Dirob development events to local logs (only while Debug is enabled).",
+      autoLogsHintDebugOff: "Enable Debug first to use auto logging.",
       debugHint: "Show extra diagnostic details for each item.",
       layoutListHint: "Show results in a single-column list layout.",
       layoutGridHint: "Show results in a multi-column grid layout.",
@@ -449,6 +457,15 @@
       await refreshState();
     });
 
+    if (exportLogsButton) {
+      exportLogsButton.addEventListener("click", async () => {
+        await chrome.runtime.sendMessage({
+          type: "DIROB_EXPORT_LOGS"
+        });
+        await refreshState();
+      });
+    }
+
     itemsList.addEventListener("click", async (event) => {
       const button = event.target.closest("[data-item-action]");
       if (!button) {
@@ -557,14 +574,21 @@
     setTitleAndAria(syncPageViewButton, translation.syncPageViewHint);
     setTitleAndAria(minimalViewButton, translation.minimalViewHint);
     setTitleAndAria(guideNumbersButton, translation.guideNumbersHint);
-    setTitleAndAria(autoLogsButton, translation.autoLogsHint);
+    setTitleAndAria(
+      autoLogsButton,
+      state?.debugEnabled ? translation.autoLogsHint : translation.autoLogsHintDebugOff
+    );
     setTitleAndAria(debugButton, translation.debugHint);
     setTitleAndAria(layoutListButton, translation.layoutListHint);
     setTitleAndAria(layoutGridButton, translation.layoutGridHint);
     setTitleAndAria(fontDownButton, translation.decreaseSizeHint);
     setTitleAndAria(fontUpButton, translation.increaseSizeHint);
+    setTitleAndAria(exportLogsButton, translation.exportLogsHint);
     setTitleAndAria(clearLogsButton, translation.clearLogsHint);
     toggleSettingsButton.classList.toggle("is-active", Boolean(state?.settingsOpen));
+    if (exportLogsButton) {
+      exportLogsButton.textContent = translation.exportLogs;
+    }
     clearLogsButton.textContent = translation.clearLogs;
 
     selectionButton.classList.toggle("is-active", Boolean(state?.selectionModeEnabled));
@@ -577,6 +601,9 @@
     debugButton.setAttribute("aria-pressed", String(Boolean(state?.debugEnabled)));
     autoLogsButton.classList.toggle("is-active", Boolean(state?.autoLogsEnabled));
     autoLogsButton.setAttribute("aria-pressed", String(Boolean(state?.autoLogsEnabled)));
+    autoLogsButton.disabled = !Boolean(state?.debugEnabled);
+    autoLogsButton.classList.toggle("is-disabled", !Boolean(state?.debugEnabled));
+    autoLogsButton.setAttribute("aria-disabled", String(!Boolean(state?.debugEnabled)));
     guideNumbersButton.classList.toggle("is-active", Boolean(state?.guideNumbersEnabled));
     guideNumbersButton.setAttribute("aria-pressed", String(Boolean(state?.guideNumbersEnabled)));
     layoutListButton.classList.toggle("is-active", state?.layoutMode !== "grid");
@@ -594,6 +621,7 @@
       : page?.mode === "detail"
         ? translation.detailHint
         : translation.listingHint;
+    setDebugInfoVisibility(Boolean(state?.debugEnabled));
 
     logMetaText.textContent = `${t(language, "logsMeta", { count: state?.logCount || 0 })} · ${
       state?.autoLogsEnabled ? translation.autoLogsOn : translation.autoLogsOff
@@ -644,6 +672,16 @@
     logPathText.textContent = helper.connected
       ? t(language, "logPathReady", { path: helper.logPath || "research/artifacts/dirob/dirob-live-log.ndjson" })
       : TRANSLATIONS[language].logPathDisconnected;
+  }
+
+  function setDebugInfoVisibility(enabled) {
+    const nodes = [settingsHelp, logRow, helperStatusText, logPathText];
+    for (const node of nodes) {
+      if (!node) {
+        continue;
+      }
+      node.classList.toggle("is-hidden", !enabled);
+    }
   }
 
   function buildSummaryText(page, state, language) {

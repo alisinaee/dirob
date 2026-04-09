@@ -34,8 +34,17 @@
 - Ensure guide-jump blink starts only after programmatic scroll settles.
 - Ensure guide-jump highlight combines overlay flash with border pulse for clearer focus indication.
 - Ensure README documents explicit manual Chrome load-unpacked steps for GitHub users.
+- Ensure settings diagnostics text (listing hint, log meta, logger status/path) is visible only when Debug mode is enabled.
+- Ensure auto log capture/persistence is gated by both Debug and Auto Logs being enabled.
+- Ensure Debug mode exposes an export action so users can download and share diagnostic logs.
 
 ## Recent Changes (Last 20)
+### 2026-04-09T11:11:47+03:30
+- Changed files: `src/panel/panel.html`, `src/panel/panel.js`, `src/panel/panel.css`, `src/background.js`
+- Summary: Added a bottom "Export logs" action, hid the entire diagnostics/info block unless Debug is enabled, disabled the Auto Logs toggle while Debug is off, and enforced background log writes to run only when both Debug and Auto Logs are enabled.
+- Behavior impact: Added or refreshed 3 behavior rule(s) from user instructions.
+<!-- fingerprint:b46633e2a343 -->
+
 ### 2026-04-09T11:05:10+03:30
 - Changed files: `src/panel/panel.css`, `README.md`
 - Summary: Upgraded guide-jump feedback from border-only blink to combined overlay+border pulse animation, and expanded README with step-by-step manual Chrome installation (`chrome://extensions`, developer mode, load unpacked, reload workflow).
@@ -150,11 +159,5 @@
 - Behavior impact: Recorded code-level deltas for future AI context.
 <!-- fingerprint:5f94cc3bf869 -->
 
-### 2026-04-09T09:54:42+03:30
-- Changed files: `src/panel/panel.html`, `src/panel/panel.js`
-- Summary: Removed the header placeholder text 'Waiting for a supported page...' by clearing the initial markup and rendering an empty subtitle when the active page is unsupported.
-- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
-<!-- fingerprint:60a8dbd43793 -->
-
 ## Last Updated
-- 2026-04-09T11:05:10+03:30
+- 2026-04-09T11:11:47+03:30

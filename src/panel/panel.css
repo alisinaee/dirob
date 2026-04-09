@@ -312,6 +312,18 @@ html[dir="ltr"] .brand-block > div {
   background: #28303b;
 }
 
+.switch-row.is-disabled,
+.switch-row:disabled {
+  opacity: 0.52;
+  cursor: not-allowed;
+}
+
+.switch-row.is-disabled:hover,
+.switch-row:disabled:hover {
+  border-color: var(--line);
+  background: var(--panel-soft);
+}
+
 .switch-row.is-active {
   border-color: rgba(255, 140, 66, 0.42);
   background: linear-gradient(180deg, rgba(255, 140, 66, 0.14) 0%, rgba(255, 140, 66, 0.09) 100%);
@@ -512,6 +524,10 @@ html[dir="ltr"] .brand-block > div {
 
 .text-button:hover {
   color: #ffffff;
+}
+
+.is-hidden {
+  display: none !important;
 }
 
 :root[data-theme="light"] .text-button {

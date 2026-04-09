@@ -180,7 +180,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     }
 
     if (message.type === "DIROB_LOG_EVENT") {
-      if (!autoLogsEnabled) {
+      if (!debugEnabled || !autoLogsEnabled) {
         sendResponse({ ok: true, skipped: true });
         return false;
       }
@@ -1583,7 +1583,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
   }
 
   function addLog(level, scope, message, details) {
-    if (!autoLogsEnabled) {
+    if (!debugEnabled || !autoLogsEnabled) {
       return;
     }
     const entry = {
