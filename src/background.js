@@ -569,9 +569,25 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       upsertRow(state, row.item, Boolean(row.isVisible), row.lastSeenAt || row.item.seenAt);
     }
 
-    for (const [sourceId, existing] of state.rows.entries()) {
+    const removedSourceIds = [];
+    for (const sourceId of state.rows.keys()) {
       if (!touched.has(sourceId)) {
-        existing.isVisible = false;
+        removedSourceIds.push(sourceId);
+      }
+    }
+
+    for (const sourceId of removedSourceIds) {
+      state.rows.delete(sourceId);
+      state.sourceCache.delete(sourceId);
+      state.matchCache.delete(sourceId);
+      if (state.selectedSourceId === sourceId) {
+        state.selectedSourceId = null;
+      }
+      if (state.activeSourceId === sourceId) {
+        state.activeSourceId = null;
+      }
+      if (state.hoverSourceId === sourceId) {
+        state.hoverSourceId = null;
       }
     }
   }

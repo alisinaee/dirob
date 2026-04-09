@@ -26,6 +26,9 @@
   let transientHighlightTimer = null;
   let lastPageContextSignature = "";
   let lastSyncSignature = "";
+  let navigationListenersBound = false;
+  let lastKnownHref = location.href;
+  let locationPollTimer = null;
 
   boot().catch(() => {});
 
@@ -36,6 +39,7 @@
 
   async function startWhenReady() {
     bootAttempts += 1;
+    ensureNavigationListeners();
     pageContext = extractor.getPageContext();
     await syncSettings();
     await notifyPageState();
@@ -389,6 +393,41 @@
       }
       return false;
     });
+  }
+
+  function ensureNavigationListeners() {
+    if (navigationListenersBound) {
+      return;
+    }
+    navigationListenersBound = true;
+
+    const originalPushState = history.pushState;
+    const originalReplaceState = history.replaceState;
+    const handleLocationChange = () => {
+      if (lastKnownHref === location.href) {
+        return;
+      }
+      lastKnownHref = location.href;
+      notifyPageState().catch(() => {});
+      refreshCards().catch(() => {});
+    };
+
+    history.pushState = function patchedPushState(...args) {
+      const result = originalPushState.apply(this, args);
+      handleLocationChange();
+      return result;
+    };
+
+    history.replaceState = function patchedReplaceState(...args) {
+      const result = originalReplaceState.apply(this, args);
+      handleLocationChange();
+      return result;
+    };
+
+    window.addEventListener("popstate", handleLocationChange, true);
+    window.addEventListener("hashchange", handleLocationChange, true);
+
+    locationPollTimer = window.setInterval(handleLocationChange, 800);
   }
 
   function ensureStorageListener() {

@@ -38,8 +38,16 @@
 - Ensure settings diagnostics text (listing hint, log meta, logger status/path) is visible only when Debug mode is enabled.
 - Ensure auto log capture/persistence is gated by both Debug and Auto Logs being enabled.
 - Ensure Debug mode exposes an export action so users can download and share diagnostic logs.
+- Ensure Torob SPA/listing URL changes trigger immediate page-state resync to avoid carrying stale products across categories.
+- Ensure background row sync removes untouched source IDs (instead of only marking invisible) to prevent stale panel items and duplicate guide mappings.
 
 ## Recent Changes (Last 20)
+### 2026-04-09T12:04:18+03:30
+- Changed files: `src/content.js`, `src/background.js`
+- Summary: Added explicit SPA navigation URL-change detection in content script (`pushState`/`replaceState`/`popstate`/poll) and changed background sync reconciliation to delete untouched rows and related caches so old-page products cannot persist in panel state.
+- Behavior impact: Added or refreshed 2 behavior rule(s) from user instructions.
+<!-- fingerprint:eb9f1d4b6132 -->
+
 ### 2026-04-09T11:13:18+03:30
 - Changed files: `README.md`
 - Summary: Rewrote install guidance as a dedicated “Install In Chrome (Unofficial / Unpacked)” section with explicit `chrome://extensions` developer-mode steps, load-unpacked flow, and reload instructions.
@@ -154,11 +162,5 @@
 - Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
 <!-- fingerprint:7c40f783a0cf -->
 
-### 2026-04-09T10:01:01+03:30
-- Changed files: `src/panel/panel.html`, `src/panel/panel.css`
-- Summary: Removed the top local-logger badge control from settings and replaced it with a simple colored status text line in the log section (green connected, red disconnected).
-- Behavior impact: Recorded code-level deltas for future AI context.
-<!-- fingerprint:44378460f090 -->
-
 ## Last Updated
-- 2026-04-09T11:13:18+03:30
+- 2026-04-09T12:04:18+03:30
