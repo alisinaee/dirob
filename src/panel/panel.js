@@ -3,6 +3,7 @@
 
   const logger = globalThis.DirobLogger;
   const summaryText = document.querySelector("[data-summary-text]");
+  const brandLink = document.querySelector(".brand-block");
   const itemsList = document.querySelector("[data-items-list]");
   const settingsPanel = document.querySelector(".settings-panel");
   const settingsBody = document.querySelector("[data-settings-body]");
@@ -101,13 +102,18 @@
       detailHint: "این صفحه جزئیات محصول است و همان محصول اصلی بررسی می‌شود.",
       listingHint: "این صفحه فهرست محصولات است و موارد قابل مشاهده بررسی می‌شوند.",
       langButton: "FA / EN",
+      switchLanguage: "تغییر زبان",
+      cycleTheme: "تغییر تم",
       autoLogsOn: "لاگ خودکار روشن",
       autoLogsOff: "لاگ خودکار خاموش",
       logHelperConnected: "ثبت لاگ محلی وصل است",
       logHelperDisconnected: "ثبت لاگ محلی قطع است",
       logPathReady: "لاگ‌ها در {path} ذخیره می‌شوند.",
       logPathDisconnected: "برای ذخیره لاگ‌ها `./run-dirob-helper` را در ریشه پروژه اجرا کنید.",
-      locateItem: "رفتن به محصول"
+      locateItem: "رفتن به محصول",
+      decreaseSize: "کوچک‌تر کردن اندازه",
+      increaseSize: "بزرگ‌تر کردن اندازه",
+      openRepository: "باز کردن گیت‌هاب Dirob"
     },
     en: {
       pageWaiting: "Waiting for a supported page...",
@@ -168,13 +174,18 @@
       detailHint: "This is a product detail page. Dirob is checking the main product.",
       listingHint: "This is a listing page. Dirob is checking visible products.",
       langButton: "EN / FA",
+      switchLanguage: "Switch language",
+      cycleTheme: "Cycle theme",
       autoLogsOn: "Auto logs on",
       autoLogsOff: "Auto logs off",
       logHelperConnected: "Local logger connected",
       logHelperDisconnected: "Local logger disconnected",
       logPathReady: "Logs are written to {path}.",
       logPathDisconnected: "Run `./run-dirob-helper` in the project root to save logs.",
-      locateItem: "Locate item"
+      locateItem: "Locate item",
+      decreaseSize: "Decrease size",
+      increaseSize: "Increase size",
+      openRepository: "Open Dirob GitHub repository"
     }
   };
 
@@ -447,17 +458,20 @@
     document.body.style.setProperty("--tool-radius", `${clamp(10 + fontScale, 8, 14)}px`);
 
     settingsTitle.textContent = translation.settingsTitle;
-    toggleSettingsButton.title = translation.settingsOpen;
-    helpButton.title = translation.help;
-    closeSettingsButton.title = translation.settingsClose;
+    setTitleAndAria(reloadAllButton, translation.reloadAll);
+    setTitleAndAria(
+      toggleSettingsButton,
+      Boolean(state?.settingsOpen) ? translation.settingsClose : translation.settingsOpen
+    );
+    setTitleAndAria(helpButton, translation.help);
+    setTitleAndAria(closeSettingsButton, translation.settingsClose);
+    setTitleAndAria(brandLink, translation.openRepository);
     languageButton.textContent = "A";
-    languageButton.title = translation.langButton;
-    languageButton.setAttribute("aria-label", translation.langButton);
+    setTitleAndAria(languageButton, translation.switchLanguage);
     const nextThemeMode = state?.themeMode || "system";
     const themeModeLabel = translation[`theme_${nextThemeMode}`] || translation.theme_system;
     themeButton.textContent = themeIconFor(nextThemeMode);
-    themeButton.title = `${translation.theme}: ${themeModeLabel}`;
-    themeButton.setAttribute("aria-label", `${translation.theme}: ${themeModeLabel}`);
+    setTitleAndAria(themeButton, `${translation.cycleTheme}: ${translation.theme} ${themeModeLabel}`);
     switchLabels.selection.textContent = translation.elementSelect;
     switchLabels.syncPageView.textContent = translation.syncPageView;
     switchLabels.minimalView.textContent = translation.minimalView;
@@ -468,7 +482,17 @@
     fontLabel.textContent = translation.fontSize;
     layoutListButton.textContent = translation.layoutList;
     layoutGridButton.textContent = translation.layoutGrid;
-    reloadAllButton.title = translation.reloadAll;
+    setTitleAndAria(selectionButton, translation.elementSelect);
+    setTitleAndAria(syncPageViewButton, translation.syncPageView);
+    setTitleAndAria(minimalViewButton, translation.minimalView);
+    setTitleAndAria(guideNumbersButton, translation.guideNumbers);
+    setTitleAndAria(autoLogsButton, translation.autoLogs);
+    setTitleAndAria(debugButton, translation.debug);
+    setTitleAndAria(layoutListButton, translation.layoutList);
+    setTitleAndAria(layoutGridButton, translation.layoutGrid);
+    setTitleAndAria(fontDownButton, translation.decreaseSize);
+    setTitleAndAria(fontUpButton, translation.increaseSize);
+    setTitleAndAria(clearLogsButton, translation.clearLogs);
     toggleSettingsButton.classList.toggle("is-active", Boolean(state?.settingsOpen));
     clearLogsButton.textContent = translation.clearLogs;
 
@@ -687,8 +711,8 @@
         ${
           showCornerTools
             ? `<div class="item-tools">
-          <button class="icon-button item-tool" data-item-action="reload-item" data-role="reload-button" data-source-id="${escapeHtml(item.sourceId)}" title="${escapeHtml(translation.reloadAll)}">${escapeHtml(t(language, "reloadItem"))}</button>
-          <button class="icon-button item-tool" data-item-action="locate-item" data-role="locate-button" data-source-id="${escapeHtml(item.sourceId)}" title="${escapeHtml(translation.locateItem)}">⌖</button>
+          <button class="icon-button item-tool" data-item-action="reload-item" data-role="reload-button" data-source-id="${escapeHtml(item.sourceId)}" title="${escapeHtml(translation.reloadAll)}" aria-label="${escapeHtml(translation.reloadAll)}">${escapeHtml(t(language, "reloadItem"))}</button>
+          <button class="icon-button item-tool" data-item-action="locate-item" data-role="locate-button" data-source-id="${escapeHtml(item.sourceId)}" title="${escapeHtml(translation.locateItem)}" aria-label="${escapeHtml(translation.locateItem)}">⌖</button>
         </div>`
             : ""
         }
@@ -824,6 +848,14 @@
 
   function clamp(value, min, max) {
     return Math.min(max, Math.max(min, value));
+  }
+
+  function setTitleAndAria(element, text) {
+    if (!element || !text) {
+      return;
+    }
+    element.title = text;
+    element.setAttribute("aria-label", text);
   }
 
   function themeIconFor(mode) {
