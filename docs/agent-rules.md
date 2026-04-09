@@ -24,8 +24,15 @@
 - Ensure font scale affects list/item content only and must not resize header/settings sections.
 - Ensure settings tooltips explain feature behavior (not just label text), and guide/status chips must expose explanatory tooltips.
 - Ensure compact item action icons use site-aware symbols (D/T, search+D/T, Google) with non-heavy reload iconography.
+- Ensure size scale range remains constrained to -5 through +5.
 
 ## Recent Changes (Last 20)
+### 2026-04-09T10:37:27+03:30
+- Changed files: `src/background.js`
+- Summary: Tightened global font-scale clamp to enforce a hard UI range of `-5..+5` for panel size adjustments.
+- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
+<!-- fingerprint:e5f9f6b78683 -->
+
 ### 2026-04-09T10:35:44+03:30
 - Changed files: `src/panel/panel.js`, `src/panel/panel.css`, `src/panel/panel.html`
 - Summary: Expanded localized tooltip/ARIA coverage with detailed behavior descriptions for top controls and settings toggles, added tooltip explanations for guide numbers and status chips, and redesigned compact action icons to use site-aware marks (D/T, search+D/T, Google, locate, lighter reload symbol).
@@ -140,11 +147,5 @@
 - Behavior impact: Recorded code-level deltas for future AI context.
 <!-- fingerprint:823d176d77e2 -->
 
-### 2026-04-08T22:23:15+03:30
-- Changed files: `src/panel/panel.js`, `src/panel/panel.css`, `src/help/help.css`
-- Summary: Replaced layout-breaking panel zoom with variable-based sizing, made grid responsive, forced deterministic list/grid/minimal class switching, improved top refresh rebuild behavior, fixed card tool placement, and hardened help-page light-theme readability.
-- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
-<!-- fingerprint:a8bf5956db01 -->
-
 ## Last Updated
-- 2026-04-09T10:35:44+03:30
+- 2026-04-09T10:37:27+03:30

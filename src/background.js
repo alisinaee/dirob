@@ -1221,7 +1221,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     if (!Number.isFinite(parsed)) {
       return 0;
     }
-    return Math.max(-5, Math.min(8, Math.round(parsed)));
+    return Math.max(-5, Math.min(5, Math.round(parsed)));
   }
 
   function findSourceIdByGuideNumber(state, guideNumber) {
