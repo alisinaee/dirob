@@ -15,20 +15,36 @@ Dirob is a Chrome side-panel extension for comparing Digikala and Torob prices w
 
 ## Development
 
-1. Load this folder as an unpacked Chrome extension.
-2. Enable auto-start for local logger (one-time):
+### Install In Chrome (Manual)
+
+1. Open Chrome and go to `chrome://extensions`.
+2. Enable `Developer mode` (top-right).
+3. Click `Load unpacked`.
+4. Select this project folder (the folder that contains `manifest.json`).
+5. Open the extension details and pin/open the side panel from the toolbar if needed.
+6. For code changes, click `Reload` on the extension card in `chrome://extensions`.
+
+### Logger Setup (Recommended)
+
+One-time auto-start setup:
 
 ```bash
 ./run-dirob-helper --install-autostart
 ```
 
-If you prefer foreground/manual mode:
+Check status:
+
+```bash
+./run-dirob-helper --status
+```
+
+Foreground/manual mode:
 
 ```bash
 ./run-dirob-helper
 ```
 
-3. Open Digikala or Torob pages and use the Dirob side panel.
+After setup, open Digikala or Torob pages and use the Dirob side panel.
 
 ## License
 

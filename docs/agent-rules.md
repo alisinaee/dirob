@@ -32,8 +32,16 @@
 - Ensure Persian UI text uses Vazir-family typography across panel/help/popup/sidebar surfaces.
 - Ensure guide-number click navigation adds a visible blink/pulse animation on the focused panel item after scroll.
 - Ensure guide-jump blink starts only after programmatic scroll settles.
+- Ensure guide-jump highlight combines overlay flash with border pulse for clearer focus indication.
+- Ensure README documents explicit manual Chrome load-unpacked steps for GitHub users.
 
 ## Recent Changes (Last 20)
+### 2026-04-09T11:05:10+03:30
+- Changed files: `src/panel/panel.css`, `README.md`
+- Summary: Upgraded guide-jump feedback from border-only blink to combined overlay+border pulse animation, and expanded README with step-by-step manual Chrome installation (`chrome://extensions`, developer mode, load unpacked, reload workflow).
+- Behavior impact: Added or refreshed 2 behavior rule(s) from user instructions.
+<!-- fingerprint:d13c1835b8bf -->
+
 ### 2026-04-09T10:59:34+03:30
 - Changed files: `src/panel/panel.js`
 - Summary: Delayed guide-jump blink trigger until programmatic scroll completion by adding a scroll-done callback path in `programmaticScrollTo`.
@@ -148,11 +156,5 @@
 - Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
 <!-- fingerprint:60a8dbd43793 -->
 
-### 2026-04-09T09:52:35+03:30
-- Changed files: `src/panel/panel.css`
-- Summary: Forced brand header icon placement to always stay on the right of Dirob text by using a fixed row-reverse brand layout, and increased the D badge size for better visual prominence.
-- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
-<!-- fingerprint:8b83e9dbba7c -->
-
 ## Last Updated
-- 2026-04-09T10:59:34+03:30
+- 2026-04-09T11:05:10+03:30
