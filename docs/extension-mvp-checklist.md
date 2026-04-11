@@ -2,7 +2,7 @@
 
 ## Goal
 
-Build a Chrome extension named `Dirob` that activates while the user browses Digikala listing pages, detects visible products during scroll, queries Torob for matching products, and shows a sidebar list with Torob price information and links.
+Build a Chrome extension named `Rashnu` that activates while the user browses Digikala listing pages, detects visible products during scroll, queries Torob for matching products, and shows a sidebar list with Torob price information and links.
 
 ## Build Order
 

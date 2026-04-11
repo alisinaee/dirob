@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const normalizeApi = globalThis.DirobNormalize;
+  const normalizeApi = globalThis.RashnuNormalize;
 
   function safeSet(tokens) {
     return new Set(tokens || []);
@@ -214,7 +214,7 @@
     };
   }
 
-  globalThis.DirobMatch = {
+  globalThis.RashnuMatch = {
     normalizeCandidate,
     extractMoreInfoParams,
     rankCandidates,

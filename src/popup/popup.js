@@ -9,16 +9,16 @@
   });
 
   async function init() {
-    const stored = await chrome.storage.local.get(["dirobDebugEnabled"]);
-    toggle.checked = Boolean(stored.dirobDebugEnabled);
+    const stored = await chrome.storage.local.get(["rashnuDebugEnabled"]);
+    toggle.checked = Boolean(stored.rashnuDebugEnabled);
     statusText.textContent = toggle.checked ? "Debug روشن است." : "Debug خاموش است.";
 
     toggle.addEventListener("change", async () => {
       await chrome.storage.local.set({
-        dirobDebugEnabled: toggle.checked
+        rashnuDebugEnabled: toggle.checked
       });
       await chrome.runtime.sendMessage({
-        type: "DIROB_SET_DEBUG",
+        type: "RASHNU_SET_DEBUG",
         payload: { enabled: toggle.checked }
       });
       statusText.textContent = toggle.checked ? "Debug روشن شد." : "Debug خاموش شد.";

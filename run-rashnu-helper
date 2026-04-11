@@ -2,13 +2,13 @@
 set -euo pipefail
 
 ROOT_DIR="/Users/drnoobmaster/development/Works/projects/torob"
-HELPER_SCRIPT="$ROOT_DIR/scripts/dirob_log_helper.py"
-LAUNCH_AGENT_ID="com.dirob.log-helper"
+HELPER_SCRIPT="$ROOT_DIR/scripts/rashnu_log_helper.py"
+LAUNCH_AGENT_ID="com.rashnu.log-helper"
 LAUNCH_AGENT_DIR="$HOME/Library/LaunchAgents"
 LAUNCH_AGENT_PATH="$LAUNCH_AGENT_DIR/$LAUNCH_AGENT_ID.plist"
-ARTIFACT_DIR="$ROOT_DIR/research/artifacts/dirob"
-STDOUT_PATH="$ARTIFACT_DIR/dirob-helper-launchd.out.log"
-STDERR_PATH="$ARTIFACT_DIR/dirob-helper-launchd.err.log"
+ARTIFACT_DIR="$ROOT_DIR/research/artifacts/rashnu"
+STDOUT_PATH="$ARTIFACT_DIR/rashnu-helper-launchd.out.log"
+STDERR_PATH="$ARTIFACT_DIR/rashnu-helper-launchd.err.log"
 
 ensure_artifacts() {
   mkdir -p "$ARTIFACT_DIR"
@@ -57,9 +57,9 @@ load_launch_agent() {
 
 print_status() {
   if curl -fsS "http://127.0.0.1:45173/health" >/dev/null 2>&1; then
-    echo "Dirob log helper: running"
+    echo "Rashnu log helper: running"
   else
-    echo "Dirob log helper: not running"
+    echo "Rashnu log helper: not running"
   fi
   if [[ -f "$LAUNCH_AGENT_PATH" ]]; then
     echo "Autostart: installed ($LAUNCH_AGENT_PATH)"
@@ -70,7 +70,7 @@ print_status() {
 
 usage() {
   cat <<USAGE
-Usage: ./run-dirob-helper [command]
+Usage: ./run-rashnu-helper [command]
 
 Commands:
   (no command)            Run logger helper in foreground

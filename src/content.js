@@ -1,16 +1,16 @@
 (function () {
   "use strict";
 
-  if (globalThis.__dirobContentBooted) {
+  if (globalThis.__rashnuContentBooted) {
     return;
   }
-  globalThis.__dirobContentBooted = true;
+  globalThis.__rashnuContentBooted = true;
 
-  const extractor = globalThis.DirobListingExtractor;
-  const logger = globalThis.DirobLogger;
+  const extractor = globalThis.RashnuListingExtractor;
+  const logger = globalThis.RashnuLogger;
   const mutationObserver = new MutationObserver(handleDomMutation);
-  const DIROB_MUTATION_IGNORE_SELECTOR =
-    '[data-dirob-guide-badge], [data-dirob-highlight], [data-dirob-transient-highlight], #dirob-selection-style, #dirob-guide-style, [data-dirob-role]';
+  const RASHNU_MUTATION_IGNORE_SELECTOR =
+    '[data-rashnu-guide-badge], [data-rashnu-highlight], [data-rashnu-transient-highlight], #rashnu-selection-style, #rashnu-guide-style, [data-rashnu-role]';
   let observedElements = new WeakSet();
   let sourceIdToRecord = new Map();
   let rowState = new Map();
@@ -93,15 +93,15 @@
 
   async function syncSettings() {
     const stored = await chrome.storage.local.get([
-      "dirobDebugEnabled",
-      "dirobSelectionModeEnabled",
-      "dirobGuideNumbersEnabled",
-      "dirobPanelActive"
+      "rashnuDebugEnabled",
+      "rashnuSelectionModeEnabled",
+      "rashnuGuideNumbersEnabled",
+      "rashnuPanelActive"
     ]);
-    debugEnabled = Boolean(stored.dirobDebugEnabled);
-    selectionModeEnabled = Boolean(stored.dirobSelectionModeEnabled);
-    guideNumbersEnabled = Boolean(stored.dirobGuideNumbersEnabled);
-    panelActive = Boolean(stored.dirobPanelActive);
+    debugEnabled = Boolean(stored.rashnuDebugEnabled);
+    selectionModeEnabled = Boolean(stored.rashnuSelectionModeEnabled);
+    guideNumbersEnabled = Boolean(stored.rashnuGuideNumbersEnabled);
+    panelActive = Boolean(stored.rashnuPanelActive);
     ensureHighlightStyle();
     ensureGuideStyle();
     if (!selectionModeEnabled || !panelActive) {
@@ -131,7 +131,7 @@
     lastPageContextSignature = signature;
     logger.debug("content", "page_context", pageContext);
     await safeSendMessage({
-      type: "DIROB_PAGE_CONTEXT",
+      type: "RASHNU_PAGE_CONTEXT",
       payload: {
         ...pageContext,
         pageKey: currentPageKey
@@ -218,7 +218,7 @@
           focusedSourceId = records[0].item.sourceId;
           setHighlightedElement(records[0].element);
           safeSendMessage({
-            type: "DIROB_ITEM_FOCUS",
+            type: "RASHNU_ITEM_FOCUS",
             payload: {
               pageKey: currentPageKey,
               pageUrl: pageContext?.pageUrl || location.href,
@@ -391,7 +391,7 @@
       focusedSourceId = sourceId;
       setHighlightedElement(element);
       safeSendMessage({
-        type: "DIROB_ITEM_FOCUS",
+        type: "RASHNU_ITEM_FOCUS",
         payload: {
           pageKey: currentPageKey,
           pageUrl: pageContext?.pageUrl || location.href,
@@ -473,7 +473,7 @@
       lastSyncSignature = syncSignature;
 
       await safeSendMessage({
-        type: "DIROB_SYNC_ITEMS",
+        type: "RASHNU_SYNC_ITEMS",
         payload: {
           pageKey: currentPageKey,
           pageUrl: pageContext?.pageUrl || location.href,
@@ -657,15 +657,15 @@
     }
     runtimeListenerBound = true;
     chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-      if (message?.type === "DIROB_FORCE_RESCAN") {
+      if (message?.type === "RASHNU_FORCE_RESCAN") {
         handleForcedRescan().then(() => sendResponse({ ok: true })).catch(() => sendResponse({ ok: false }));
         return true;
       }
-      if (message?.type === "DIROB_SOFT_RESCAN") {
+      if (message?.type === "RASHNU_SOFT_RESCAN") {
         handleSoftRescan().then(() => sendResponse({ ok: true })).catch(() => sendResponse({ ok: false }));
         return true;
       }
-      if (message?.type === "DIROB_SCROLL_TO_ITEM") {
+      if (message?.type === "RASHNU_SCROLL_TO_ITEM") {
         sendResponse({
           ok: handleScrollToItem(message.payload?.sourceId)
         });
@@ -784,11 +784,11 @@
       if (areaName !== "local") {
         return;
       }
-      if (Object.prototype.hasOwnProperty.call(changes, "dirobDebugEnabled")) {
-        debugEnabled = Boolean(changes.dirobDebugEnabled.newValue);
+      if (Object.prototype.hasOwnProperty.call(changes, "rashnuDebugEnabled")) {
+        debugEnabled = Boolean(changes.rashnuDebugEnabled.newValue);
       }
-      if (Object.prototype.hasOwnProperty.call(changes, "dirobSelectionModeEnabled")) {
-        selectionModeEnabled = Boolean(changes.dirobSelectionModeEnabled.newValue);
+      if (Object.prototype.hasOwnProperty.call(changes, "rashnuSelectionModeEnabled")) {
+        selectionModeEnabled = Boolean(changes.rashnuSelectionModeEnabled.newValue);
         if (!selectionModeEnabled) {
           clearHighlightedElement();
           focusedSourceId = null;
@@ -797,8 +797,8 @@
         }
         scheduleSync();
       }
-      if (Object.prototype.hasOwnProperty.call(changes, "dirobGuideNumbersEnabled")) {
-        guideNumbersEnabled = Boolean(changes.dirobGuideNumbersEnabled.newValue);
+      if (Object.prototype.hasOwnProperty.call(changes, "rashnuGuideNumbersEnabled")) {
+        guideNumbersEnabled = Boolean(changes.rashnuGuideNumbersEnabled.newValue);
         ensureGuideStyle();
         if (panelActive) {
           renderGuideBadges();
@@ -806,8 +806,8 @@
           clearGuideBadges();
         }
       }
-      if (Object.prototype.hasOwnProperty.call(changes, "dirobPanelActive")) {
-        panelActive = Boolean(changes.dirobPanelActive.newValue);
+      if (Object.prototype.hasOwnProperty.call(changes, "rashnuPanelActive")) {
+        panelActive = Boolean(changes.rashnuPanelActive.newValue);
         if (!panelActive) {
           clearGuideBadges();
           clearHighlightedElement();
@@ -865,24 +865,24 @@
   }
 
   function ensureHighlightStyle() {
-    if (document.getElementById("dirob-selection-style")) {
+    if (document.getElementById("rashnu-selection-style")) {
       return;
     }
     const style = document.createElement("style");
-    style.id = "dirob-selection-style";
+    style.id = "rashnu-selection-style";
     style.textContent = `
-      [data-dirob-highlight="true"] {
+      [data-rashnu-highlight="true"] {
         outline: 2px solid #ff8c42 !important;
         outline-offset: 2px !important;
         box-shadow: 0 0 0 4px rgba(255, 140, 66, 0.18) !important;
       }
-      [data-dirob-transient-highlight="true"] {
+      [data-rashnu-transient-highlight="true"] {
         outline: 2px solid #6fb7ff !important;
         outline-offset: 3px !important;
         box-shadow: 0 0 0 5px rgba(111, 183, 255, 0.2) !important;
-        animation: dirob-pulse-highlight 1200ms ease;
+        animation: rashnu-pulse-highlight 1200ms ease;
       }
-      @keyframes dirob-pulse-highlight {
+      @keyframes rashnu-pulse-highlight {
         0% { box-shadow: 0 0 0 0 rgba(111, 183, 255, 0.32); }
         70% { box-shadow: 0 0 0 8px rgba(111, 183, 255, 0); }
         100% { box-shadow: 0 0 0 0 rgba(111, 183, 255, 0); }
@@ -897,17 +897,17 @@
     }
     ensureHighlightStyle();
     if (highlightedElement && highlightedElement !== element) {
-      highlightedElement.removeAttribute("data-dirob-highlight");
+      highlightedElement.removeAttribute("data-rashnu-highlight");
     }
     highlightedElement = element;
-    highlightedElement.setAttribute("data-dirob-highlight", "true");
+    highlightedElement.setAttribute("data-rashnu-highlight", "true");
   }
 
   function clearHighlightedElement() {
     if (!highlightedElement) {
       return;
     }
-    highlightedElement.removeAttribute("data-dirob-highlight");
+    highlightedElement.removeAttribute("data-rashnu-highlight");
     highlightedElement = null;
   }
 
@@ -916,25 +916,25 @@
       return;
     }
     if (transientHighlightElement && transientHighlightElement !== element) {
-      transientHighlightElement.removeAttribute("data-dirob-transient-highlight");
+      transientHighlightElement.removeAttribute("data-rashnu-transient-highlight");
     }
     transientHighlightElement = element;
-    transientHighlightElement.setAttribute("data-dirob-transient-highlight", "true");
+    transientHighlightElement.setAttribute("data-rashnu-transient-highlight", "true");
     window.clearTimeout(transientHighlightTimer);
     transientHighlightTimer = window.setTimeout(() => {
-      transientHighlightElement?.removeAttribute("data-dirob-transient-highlight");
+      transientHighlightElement?.removeAttribute("data-rashnu-transient-highlight");
       transientHighlightElement = null;
     }, duration);
   }
 
   function ensureGuideStyle() {
-    if (document.getElementById("dirob-guide-style")) {
+    if (document.getElementById("rashnu-guide-style")) {
       return;
     }
     const style = document.createElement("style");
-    style.id = "dirob-guide-style";
+    style.id = "rashnu-guide-style";
     style.textContent = `
-      .dirob-guide-badge {
+      .rashnu-guide-badge {
         position: absolute;
         inset-inline-start: 8px;
         inset-block-start: 8px;
@@ -955,7 +955,7 @@
         cursor: pointer;
         transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
       }
-      .dirob-guide-badge:hover {
+      .rashnu-guide-badge:hover {
         transform: translateY(-1px);
         border-color: rgba(111, 183, 255, 0.72);
         background: rgba(17, 19, 23, 0.98);
@@ -976,14 +976,14 @@
       }
       ensureElementPositioning(record.element);
       const badge = document.createElement("span");
-      badge.className = "dirob-guide-badge";
-      badge.setAttribute("data-dirob-guide-badge", "true");
+      badge.className = "rashnu-guide-badge";
+      badge.setAttribute("data-rashnu-guide-badge", "true");
       badge.setAttribute("data-source-id", record.item.sourceId);
       badge.textContent = String(record.item.guideNumber || (record.item.position || 0) + 1);
       badge.addEventListener("mouseenter", () => {
         pulseHighlightElement(record.element, 700);
         safeSendMessage({
-          type: "DIROB_GUIDE_BADGE_HOVER",
+          type: "RASHNU_GUIDE_BADGE_HOVER",
           payload: {
             sourceId: record.item.sourceId
           }
@@ -991,7 +991,7 @@
       });
       badge.addEventListener("mouseleave", () => {
         safeSendMessage({
-          type: "DIROB_GUIDE_BADGE_HOVER",
+          type: "RASHNU_GUIDE_BADGE_HOVER",
           payload: {
             sourceId: null
           }
@@ -1002,7 +1002,7 @@
         event.stopPropagation();
         pulseHighlightElement(record.element);
         safeSendMessage({
-          type: "DIROB_GUIDE_BADGE_CLICK",
+          type: "RASHNU_GUIDE_BADGE_CLICK",
           payload: {
             sourceId: record.item.sourceId
           }
@@ -1013,21 +1013,21 @@
   }
 
   function clearGuideBadges() {
-    document.querySelectorAll("[data-dirob-guide-badge='true']").forEach((node) => {
+    document.querySelectorAll("[data-rashnu-guide-badge='true']").forEach((node) => {
       node.remove();
     });
-    document.querySelectorAll("[data-dirob-guide-owner='true']").forEach((element) => {
+    document.querySelectorAll("[data-rashnu-guide-owner='true']").forEach((element) => {
       if (!(element instanceof HTMLElement)) {
         return;
       }
-      const previous = element.getAttribute("data-dirob-prev-position");
+      const previous = element.getAttribute("data-rashnu-prev-position");
       if (previous != null) {
         element.style.position = previous;
       } else {
         element.style.removeProperty("position");
       }
-      element.removeAttribute("data-dirob-prev-position");
-      element.removeAttribute("data-dirob-guide-owner");
+      element.removeAttribute("data-rashnu-prev-position");
+      element.removeAttribute("data-rashnu-guide-owner");
     });
   }
 
@@ -1038,7 +1038,7 @@
     const snapshot = context || extractor.getPageContext();
     const snapshotPageKey = buildPageKey(snapshot);
     await safeSendMessage({
-      type: "DIROB_SYNC_ITEMS",
+      type: "RASHNU_SYNC_ITEMS",
       payload: {
         pageKey: snapshotPageKey,
         pageUrl: snapshot?.pageUrl || location.href,
@@ -1059,14 +1059,14 @@
     if (!(element instanceof HTMLElement)) {
       return;
     }
-    if (element.getAttribute("data-dirob-guide-owner") === "true") {
+    if (element.getAttribute("data-rashnu-guide-owner") === "true") {
       return;
     }
     const computed = window.getComputedStyle(element).position;
     if (computed === "static") {
-      element.setAttribute("data-dirob-prev-position", element.style.position || "");
+      element.setAttribute("data-rashnu-prev-position", element.style.position || "");
       element.style.position = "relative";
-      element.setAttribute("data-dirob-guide-owner", "true");
+      element.setAttribute("data-rashnu-guide-owner", "true");
     }
   }
 
@@ -1191,7 +1191,7 @@
     }
 
     for (const mutation of mutations) {
-      if (isDirobNode(mutation.target)) {
+      if (isRashnuNode(mutation.target)) {
         continue;
       }
       if (hasMeaningfulMutationNodes(mutation.addedNodes) || hasMeaningfulMutationNodes(mutation.removedNodes)) {
@@ -1204,7 +1204,7 @@
 
   function hasMeaningfulMutationNodes(nodeList) {
     for (const node of Array.from(nodeList || [])) {
-      if (isDirobNode(node)) {
+      if (isRashnuNode(node)) {
         continue;
       }
       if (node.nodeType === Node.TEXT_NODE) {
@@ -1216,8 +1216,8 @@
       if (node.matches?.("script, style, noscript")) {
         continue;
       }
-      if (node.querySelector?.(DIROB_MUTATION_IGNORE_SELECTOR)) {
-        const hasExternalNodes = Array.from(node.children || []).some((child) => !isDirobNode(child));
+      if (node.querySelector?.(RASHNU_MUTATION_IGNORE_SELECTOR)) {
+        const hasExternalNodes = Array.from(node.children || []).some((child) => !isRashnuNode(child));
         if (!hasExternalNodes) {
           continue;
         }
@@ -1229,17 +1229,17 @@
     return false;
   }
 
-  function isDirobNode(node) {
+  function isRashnuNode(node) {
     if (!node) {
       return false;
     }
     if (node.nodeType === Node.TEXT_NODE) {
-      return isDirobNode(node.parentElement);
+      return isRashnuNode(node.parentElement);
     }
     if (!(node instanceof Element)) {
       return false;
     }
-    return Boolean(node.matches?.(DIROB_MUTATION_IGNORE_SELECTOR) || node.closest?.(DIROB_MUTATION_IGNORE_SELECTOR));
+    return Boolean(node.matches?.(RASHNU_MUTATION_IGNORE_SELECTOR) || node.closest?.(RASHNU_MUTATION_IGNORE_SELECTOR));
   }
 
   function isMeaningfulProductMutation(node) {

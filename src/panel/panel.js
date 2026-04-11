@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const logger = globalThis.DirobLogger;
+  const logger = globalThis.RashnuLogger;
   const summaryText = document.querySelector("[data-summary-text]");
   const brandLink = document.querySelector(".brand-block");
   const itemsList = document.querySelector("[data-items-list]");
@@ -46,10 +46,18 @@
     search: document.querySelector('[data-provider-section-label="search"]'),
     price: document.querySelector('[data-provider-section-label="price"]')
   };
+  const providerChipRows = {
+    search: document.querySelector('[data-provider-active-chips="search"]'),
+    price: document.querySelector('[data-provider-active-chips="price"]')
+  };
+  const providerSettingsBlock = document.querySelector("[data-provider-settings-block]");
+  const providerSettingsToggleButton = document.querySelector('[data-action="toggle-provider-settings-editor"]');
+  const providerSettingsTitle = document.querySelector("[data-provider-settings-title]");
   const providerWarningText = document.querySelector("[data-provider-warning]");
   const providerLabels = Array.from(document.querySelectorAll("[data-provider-label]"));
   const providerSearchButtons = Array.from(document.querySelectorAll('[data-action="toggle-provider-search"]'));
   const providerPriceButtons = Array.from(document.querySelectorAll('[data-action="toggle-provider-price"]'));
+  const ALL_PROVIDER_SITES = ["torob", "digikala", "technolife", "emalls", "amazon", "ebay"];
 
   const TRANSLATIONS = {
     fa: {
@@ -71,10 +79,10 @@
       settingsTitle: "تنظیمات",
       settingsClose: "بستن",
       settingsOpen: "تنظیمات",
-      settingsOpenHint: "باز کردن تنظیمات Dirob.",
-      settingsCloseHint: "بستن پنل تنظیمات Dirob.",
+      settingsOpenHint: "باز کردن تنظیمات Rashnu.",
+      settingsCloseHint: "بستن پنل تنظیمات Rashnu.",
       help: "راهنما",
-      helpHint: "باز کردن صفحه راهنمای Dirob.",
+      helpHint: "باز کردن صفحه راهنمای Rashnu.",
       theme: "تم",
       theme_system: "خودکار",
       theme_dark: "تیره",
@@ -87,6 +95,10 @@
       autoLogs: "ثبت خودکار لاگ",
       providerSearchSection: "دکمه‌های جست‌وجو",
       providerPriceSection: "نمایش قیمت",
+      providerSettingsTitle: "Active Providers",
+      providerSettingsExpandHint: "باز کردن تنظیمات منابع مقایسه.",
+      providerSettingsCollapseHint: "بستن تنظیمات منابع مقایسه.",
+      providerNoActive: "هیچ‌کدام",
       providerWarning:
         "هشدار: آمازون و eBay ممکن است ترافیک افزونه را به‌عنوان رفتار بات تشخیص دهند، بنابراین نتایج این دو منبع همیشه کاملاً قابل اتکا نیست.",
       layout: "چیدمان",
@@ -94,13 +106,13 @@
       layoutGrid: "گرید",
       fontSize: "اندازه",
       unsupportedEmpty:
-        "برای استفاده از Dirob یک صفحه‌ی فهرست یا جزئیات محصول در دیجیکالا، ترب، تکنولایف، ایمالز، آمازون یا eBay باز کنید.",
+        "برای استفاده از Rashnu یک صفحه‌ی فهرست یا جزئیات محصول در دیجیکالا، ترب، تکنولایف، ایمالز، آمازون یا eBay باز کنید.",
       selectionEmpty: "ماوس را روی یک کارت محصول ببرید یا روی آن فوکوس کنید.",
       noItems: "هنوز نتیجه‌ای برای نمایش وجود ندارد.",
       summarySelection:
         "حالت انتخاب عنصر فعال است. ماوس را روی یک محصول ببرید تا فقط همان بررسی شود.",
       summaryItems: "{visible} محصول فعال | {count} مورد در پنل",
-      summaryNoItems: "هنوز محصولی از این صفحه به Dirob نرسیده است.",
+      summaryNoItems: "هنوز محصولی از این صفحه به Rashnu نرسیده است.",
       sectionMain: "محصول اصلی",
       sectionSuggested: "محصولات پیشنهادی",
       retries: "تلاش: {value}",
@@ -137,14 +149,14 @@
       logHelperDisconnected: "ثبت لاگ محلی قطع است",
       logPathReady: "لاگ‌ها در {path} ذخیره می‌شوند.",
       logPathDisconnected:
-        "برای راه‌اندازی خودکار (یک‌بار): `./run-dirob-helper --install-autostart` · اجرای دستی: `./run-dirob-helper`",
+        "برای راه‌اندازی خودکار (یک‌بار): `./run-rashnu-helper --install-autostart` · اجرای دستی: `./run-rashnu-helper`",
       locateItem: "رفتن به محصول",
       locateItemHint: "رفتن به همین محصول در صفحه اصلی و هایلایت کردن آن.",
       decreaseSize: "کوچک‌تر کردن اندازه",
       decreaseSizeHint: "کوچک‌تر کردن اندازه آیتم‌ها و متن‌های داخل لیست محصولات.",
       increaseSize: "بزرگ‌تر کردن اندازه",
       increaseSizeHint: "بزرگ‌تر کردن اندازه آیتم‌ها و متن‌های داخل لیست محصولات.",
-      openRepository: "باز کردن گیت‌هاب Dirob",
+      openRepository: "باز کردن گیت‌هاب Rashnu",
       elementSelectHint:
         "وقتی روشن باشد فقط محصولی که روی آن hover یا focus می‌کنید در پنل بررسی و نمایش داده می‌شود.",
       syncPageViewHint:
@@ -153,7 +165,7 @@
         "کارت‌ها فشرده می‌شوند و دکمه‌های هر آیتم به حالت آیکونی نمایش داده می‌شود تا فضای کمتری بگیرد.",
       guideNumbersHint:
         "شماره راهنما کنار محصولات روی صفحه و داخل پنل نمایش داده می‌شود تا تطبیق آیتم‌ها ساده باشد.",
-      autoLogsHint: "وقایع توسعه Dirob به لاگ محلی ارسال می‌شود (فقط وقتی دیباگ روشن است).",
+      autoLogsHint: "وقایع توسعه Rashnu به لاگ محلی ارسال می‌شود (فقط وقتی دیباگ روشن است).",
       autoLogsHintDebugOff: "برای فعال شدن ثبت خودکار لاگ، اول دیباگ را روشن کنید.",
       debugHint: "اطلاعات تشخیصی بیشتری برای هر آیتم نمایش داده می‌شود.",
       layoutListHint: "نمایش نتایج به‌صورت لیست تک‌ستونی.",
@@ -188,10 +200,10 @@
       settingsTitle: "Settings",
       settingsClose: "Close",
       settingsOpen: "Settings",
-      settingsOpenHint: "Open Dirob settings.",
-      settingsCloseHint: "Close Dirob settings.",
+      settingsOpenHint: "Open Rashnu settings.",
+      settingsCloseHint: "Close Rashnu settings.",
       help: "Help",
-      helpHint: "Open the Dirob guide page.",
+      helpHint: "Open the Rashnu guide page.",
       theme: "Theme",
       theme_system: "System",
       theme_dark: "Dark",
@@ -204,6 +216,10 @@
       autoLogs: "Auto Logs",
       providerSearchSection: "Search Buttons",
       providerPriceSection: "Show Prices",
+      providerSettingsTitle: "Active Providers",
+      providerSettingsExpandHint: "Expand comparison provider settings.",
+      providerSettingsCollapseHint: "Collapse comparison provider settings.",
+      providerNoActive: "None",
       providerWarning:
         "Warning: Amazon and eBay may detect extension traffic as bot activity, so results on these providers are not always fully reliable.",
       layout: "Layout",
@@ -211,13 +227,13 @@
       layoutGrid: "Grid",
       fontSize: "Size",
       unsupportedEmpty:
-        "Open a Digikala, Torob, Technolife, Emalls, Amazon, or eBay listing/detail page to use Dirob.",
+        "Open a Digikala, Torob, Technolife, Emalls, Amazon, or eBay listing/detail page to use Rashnu.",
       selectionEmpty: "Hover or focus a product card to inspect just that item.",
       noItems: "No results are ready yet.",
       summarySelection:
         "Element select mode is active. Hover a product to inspect only that one.",
       summaryItems: "{visible} active | {count} in panel",
-      summaryNoItems: "No product data has reached Dirob yet.",
+      summaryNoItems: "No product data has reached Rashnu yet.",
       sectionMain: "Main Product",
       sectionSuggested: "Suggested Products",
       retries: "Retries: {value}",
@@ -241,8 +257,8 @@
       hiddenPrice: "Hidden",
       unknown: "Unknown",
       noExact: "No exact match",
-      detailHint: "This is a product detail page. Dirob is checking the main product.",
-      listingHint: "This is a listing page. Dirob is checking visible products.",
+      detailHint: "This is a product detail page. Rashnu is checking the main product.",
+      listingHint: "This is a listing page. Rashnu is checking visible products.",
       langButton: "EN / FA",
       switchLanguage: "Switch language",
       switchLanguageHint: "Switch panel language between English and Persian.",
@@ -254,14 +270,14 @@
       logHelperDisconnected: "Local logger disconnected",
       logPathReady: "Logs are written to {path}.",
       logPathDisconnected:
-        "One-time auto-start: `./run-dirob-helper --install-autostart` · manual run: `./run-dirob-helper`",
+        "One-time auto-start: `./run-rashnu-helper --install-autostart` · manual run: `./run-rashnu-helper`",
       locateItem: "Locate item",
       locateItemHint: "Scroll to this product on the real page and highlight it.",
       decreaseSize: "Decrease size",
       decreaseSizeHint: "Decrease list item/card sizing, including item text.",
       increaseSize: "Increase size",
       increaseSizeHint: "Increase list item/card sizing, including item text.",
-      openRepository: "Open Dirob GitHub repository",
+      openRepository: "Open Rashnu GitHub repository",
       elementSelectHint:
         "When enabled, only the currently hovered/focused product is inspected and shown in the panel.",
       syncPageViewHint:
@@ -270,13 +286,13 @@
         "Compacts cards and switches per-item actions to icon buttons to save vertical space.",
       guideNumbersHint:
         "Shows matching guide numbers on the page and in the panel so items are easier to correlate.",
-      autoLogsHint: "Send Dirob development events to local logs (only while Debug is enabled).",
+      autoLogsHint: "Send Rashnu development events to local logs (only while Debug is enabled).",
       autoLogsHintDebugOff: "Enable Debug first to use auto logging.",
       debugHint: "Show extra diagnostic details for each item.",
       layoutListHint: "Show results in a single-column list layout.",
       layoutGridHint: "Show results in a multi-column grid layout.",
       guideNumberHint: "Guide number #{number}; the same number is shown on the matching product on page.",
-      statusHint_loading: "Dirob is still searching the opposite site.",
+      statusHint_loading: "Rashnu is still searching the opposite site.",
       statusHint_matched: "A strong match was found.",
       statusHint_low_confidence: "A match was found but confidence is low.",
       statusHint_not_found: "No reliable match was found for this item.",
@@ -298,13 +314,15 @@
   let panelPort = null;
   let panelPortReconnectTimer = 0;
   let panelShuttingDown = false;
+  let providerSettingsExpanded = true;
+  let providerSettingsExpandedOverride = null;
   const guideJumpTimers = new WeakMap();
 
   boot().catch((error) => {
     logger.error("panel", "boot_failed", {
       error
     });
-    summaryText.textContent = `Dirob error: ${error.message}`;
+    summaryText.textContent = `Rashnu error: ${error.message}`;
   });
 
   async function boot() {
@@ -313,7 +331,7 @@
     await refreshState();
 
     chrome.runtime.onMessage.addListener((message) => {
-      if (message?.type === "DIROB_PANEL_STATE_UPDATED") {
+      if (message?.type === "RASHNU_PANEL_STATE_UPDATED") {
         refreshState().catch(() => {});
       }
       return false;
@@ -336,7 +354,7 @@
     }
     try {
       panelPort = chrome.runtime.connect({
-        name: "dirob-panel"
+        name: "rashnu-panel"
       });
       panelPort.onDisconnect.addListener(() => {
         panelPort = null;
@@ -377,7 +395,7 @@
     reloadAllButton.addEventListener("click", async () => {
       forceRebuild();
       await chrome.runtime.sendMessage({
-        type: "DIROB_RELOAD_ALL"
+        type: "RASHNU_RELOAD_ALL"
       });
       logger.info("panel", "reload_all_clicked");
       await refreshState();
@@ -386,7 +404,7 @@
 
     toggleSettingsButton.addEventListener("click", async () => {
       await chrome.runtime.sendMessage({
-        type: "DIROB_SET_SETTINGS_OPEN",
+        type: "RASHNU_SET_SETTINGS_OPEN",
         payload: { enabled: !Boolean(currentState?.settingsOpen) }
       });
       await refreshState();
@@ -403,7 +421,7 @@
       const current = order.includes(currentState?.themeMode) ? currentState.themeMode : "system";
       const next = order[(order.indexOf(current) + 1) % order.length];
       await chrome.runtime.sendMessage({
-        type: "DIROB_SET_THEME_MODE",
+        type: "RASHNU_SET_THEME_MODE",
         payload: { themeMode: next }
       });
       await refreshState();
@@ -411,7 +429,7 @@
 
     closeSettingsButton.addEventListener("click", async () => {
       await chrome.runtime.sendMessage({
-        type: "DIROB_SET_SETTINGS_OPEN",
+        type: "RASHNU_SET_SETTINGS_OPEN",
         payload: { enabled: false }
       });
       await refreshState();
@@ -420,7 +438,7 @@
     selectionButton.addEventListener("click", async () => {
       const enabled = !Boolean(currentState?.selectionModeEnabled);
       await chrome.runtime.sendMessage({
-        type: "DIROB_SET_SELECTION_MODE",
+        type: "RASHNU_SET_SELECTION_MODE",
         payload: { enabled }
       });
       await refreshState();
@@ -429,7 +447,7 @@
     syncPageViewButton.addEventListener("click", async () => {
       const enabled = !Boolean(currentState?.syncPageViewEnabled);
       await chrome.runtime.sendMessage({
-        type: "DIROB_SET_SYNC_PAGE_VIEW",
+        type: "RASHNU_SET_SYNC_PAGE_VIEW",
         payload: { enabled }
       });
       await refreshState();
@@ -438,7 +456,7 @@
     minimalViewButton.addEventListener("click", async () => {
       const enabled = !Boolean(currentState?.minimalViewEnabled);
       await chrome.runtime.sendMessage({
-        type: "DIROB_SET_MINIMAL_VIEW",
+        type: "RASHNU_SET_MINIMAL_VIEW",
         payload: { enabled }
       });
       forceRebuild();
@@ -448,7 +466,7 @@
     debugButton.addEventListener("click", async () => {
       const enabled = !Boolean(currentState?.debugEnabled);
       await chrome.runtime.sendMessage({
-        type: "DIROB_SET_DEBUG",
+        type: "RASHNU_SET_DEBUG",
         payload: { enabled }
       });
       await refreshState();
@@ -460,7 +478,7 @@
       }
       const enabled = !Boolean(currentState?.autoLogsEnabled);
       await chrome.runtime.sendMessage({
-        type: "DIROB_SET_AUTO_LOGS",
+        type: "RASHNU_SET_AUTO_LOGS",
         payload: { enabled }
       });
       await refreshState();
@@ -469,10 +487,19 @@
     guideNumbersButton.addEventListener("click", async () => {
       const enabled = !Boolean(currentState?.guideNumbersEnabled);
       await chrome.runtime.sendMessage({
-        type: "DIROB_SET_GUIDE_NUMBERS",
+        type: "RASHNU_SET_GUIDE_NUMBERS",
         payload: { enabled }
       });
       await refreshState();
+    });
+
+    providerSettingsToggleButton?.addEventListener("click", () => {
+      const autoExpanded = !Boolean(currentState?.minimalViewEnabled);
+      const nextExpanded = !providerSettingsExpanded;
+      providerSettingsExpanded = nextExpanded;
+      providerSettingsExpandedOverride = nextExpanded === autoExpanded ? null : nextExpanded;
+      const language = currentState?.language === "en" ? "en" : "fa";
+      updateProviderSettingsState(currentState, TRANSLATIONS[language], language);
     });
 
     for (const button of providerSearchButtons) {
@@ -480,7 +507,7 @@
         const provider = String(button.getAttribute("data-provider") || "");
         const enabled = !isProviderSearchEnabled(currentState, provider);
         await chrome.runtime.sendMessage({
-          type: "DIROB_SET_PROVIDER_SEARCH",
+          type: "RASHNU_SET_PROVIDER_SEARCH",
           payload: { provider, enabled }
         });
         await refreshState();
@@ -492,7 +519,7 @@
         const provider = String(button.getAttribute("data-provider") || "");
         const enabled = !isProviderPriceVisible(currentState, provider);
         await chrome.runtime.sendMessage({
-          type: "DIROB_SET_PROVIDER_PRICE",
+          type: "RASHNU_SET_PROVIDER_PRICE",
           payload: { provider, enabled }
         });
         await refreshState();
@@ -501,7 +528,7 @@
 
     layoutListButton.addEventListener("click", async () => {
       await chrome.runtime.sendMessage({
-        type: "DIROB_SET_LAYOUT_MODE",
+        type: "RASHNU_SET_LAYOUT_MODE",
         payload: { layoutMode: "list" }
       });
       forceRebuild();
@@ -510,7 +537,7 @@
 
     layoutGridButton.addEventListener("click", async () => {
       await chrome.runtime.sendMessage({
-        type: "DIROB_SET_LAYOUT_MODE",
+        type: "RASHNU_SET_LAYOUT_MODE",
         payload: { layoutMode: "grid" }
       });
       forceRebuild();
@@ -520,7 +547,7 @@
     languageButton.addEventListener("click", async () => {
       const language = currentState?.language === "en" ? "fa" : "en";
       await chrome.runtime.sendMessage({
-        type: "DIROB_SET_LANGUAGE",
+        type: "RASHNU_SET_LANGUAGE",
         payload: { language }
       });
       forceRebuild();
@@ -529,7 +556,7 @@
 
     fontDownButton.addEventListener("click", async () => {
       await chrome.runtime.sendMessage({
-        type: "DIROB_ADJUST_FONT_SCALE",
+        type: "RASHNU_ADJUST_FONT_SCALE",
         payload: { delta: -1 }
       });
       forceRebuild();
@@ -538,7 +565,7 @@
 
     fontUpButton.addEventListener("click", async () => {
       await chrome.runtime.sendMessage({
-        type: "DIROB_ADJUST_FONT_SCALE",
+        type: "RASHNU_ADJUST_FONT_SCALE",
         payload: { delta: 1 }
       });
       forceRebuild();
@@ -547,7 +574,7 @@
 
     clearLogsButton.addEventListener("click", async () => {
       await chrome.runtime.sendMessage({
-        type: "DIROB_CLEAR_LOGS"
+        type: "RASHNU_CLEAR_LOGS"
       });
       await refreshState();
     });
@@ -555,7 +582,7 @@
     if (exportLogsButton) {
       exportLogsButton.addEventListener("click", async () => {
         await chrome.runtime.sendMessage({
-          type: "DIROB_EXPORT_LOGS"
+          type: "RASHNU_EXPORT_LOGS"
         });
         await refreshState();
       });
@@ -570,7 +597,7 @@
       if (button.getAttribute("data-item-action") === "reload-item") {
         const sourceId = button.getAttribute("data-source-id");
         await chrome.runtime.sendMessage({
-          type: "DIROB_RELOAD_ITEM",
+          type: "RASHNU_RELOAD_ITEM",
           payload: { sourceId }
         });
         await refreshState();
@@ -580,7 +607,7 @@
       if (button.getAttribute("data-item-action") === "locate-item") {
         const sourceId = button.getAttribute("data-source-id");
         await chrome.runtime.sendMessage({
-          type: "DIROB_LOCATE_ITEM",
+          type: "RASHNU_LOCATE_ITEM",
           payload: { sourceId }
         });
         return;
@@ -606,7 +633,7 @@
   async function refreshState() {
     const scrollTop = itemsList.scrollTop;
     currentState = await chrome.runtime.sendMessage({
-      type: "DIROB_PANEL_GET_STATE"
+      type: "RASHNU_PANEL_GET_STATE"
     });
     const rerenderedList = render(currentState);
     if (rerenderedList === "rebuild") {
@@ -664,6 +691,9 @@
     }
     if (providerSectionLabels.price) {
       providerSectionLabels.price.textContent = translation.providerPriceSection;
+    }
+    if (providerSettingsTitle) {
+      providerSettingsTitle.textContent = translation.providerSettingsTitle;
     }
     if (providerWarningText) {
       providerWarningText.textContent = translation.providerWarning;
@@ -723,6 +753,7 @@
       button.classList.toggle("is-active", enabled);
       button.setAttribute("aria-pressed", String(enabled));
     }
+    updateProviderSettingsState(state, translation, language);
     layoutListButton.classList.toggle("is-active", state?.layoutMode !== "grid");
     layoutGridButton.classList.toggle("is-active", state?.layoutMode === "grid");
     settingsPanel.classList.toggle("is-open", Boolean(state?.settingsOpen));
@@ -787,7 +818,7 @@
     helperStatusText.classList.toggle("is-online", Boolean(helper.connected));
     helperStatusText.classList.toggle("is-offline", !helper.connected);
     logPathText.textContent = helper.connected
-      ? t(language, "logPathReady", { path: helper.logPath || "research/artifacts/dirob/dirob-live-log.ndjson" })
+      ? t(language, "logPathReady", { path: helper.logPath || "research/artifacts/rashnu/rashnu-live-log.ndjson" })
       : TRANSLATIONS[language].logPathDisconnected;
   }
 
@@ -888,7 +919,7 @@
       : Number.isFinite(item.position)
         ? item.position + 1
         : null;
-    const googleUrl = match?.googleUrl || globalThis.DirobNormalize.buildGoogleSearchUrl(item.title);
+    const googleUrl = match?.googleUrl || globalThis.RashnuNormalize.buildGoogleSearchUrl(item.title);
     const minimalViewEnabled = Boolean(state?.minimalViewEnabled);
     const isGridLayout = state?.layoutMode === "grid";
     const useCompactActions = minimalViewEnabled || isGridLayout;
@@ -1423,6 +1454,58 @@
       .replace(/٫/gu, ".");
   }
 
+  function updateProviderSettingsState(state, translation, language) {
+    if (!providerSettingsBlock) {
+      return;
+    }
+    const expanded = isProviderSettingsExpanded(state);
+    providerSettingsExpanded = expanded;
+    providerSettingsBlock.classList.toggle("is-expanded", expanded);
+    if (providerSettingsToggleButton) {
+      providerSettingsToggleButton.setAttribute("aria-expanded", String(expanded));
+      setTitleAndAria(
+        providerSettingsToggleButton,
+        expanded ? translation.providerSettingsCollapseHint : translation.providerSettingsExpandHint
+      );
+    }
+    providerChipRows.search?.setAttribute("aria-label", translation.providerSearchSection);
+    providerChipRows.price?.setAttribute("aria-label", translation.providerPriceSection);
+    providerChipRows.search?.setAttribute("title", translation.providerSearchSection);
+    providerChipRows.price?.setAttribute("title", translation.providerPriceSection);
+    renderProviderSummaryChips(state, language, "search");
+    renderProviderSummaryChips(state, language, "price");
+  }
+
+  function isProviderSettingsExpanded(state) {
+    const autoExpanded = !Boolean(state?.minimalViewEnabled);
+    if (providerSettingsExpandedOverride == null) {
+      return autoExpanded;
+    }
+    return providerSettingsExpandedOverride;
+  }
+
+  function renderProviderSummaryChips(state, language, section) {
+    const host = providerChipRows[section];
+    if (!host) {
+      return;
+    }
+    const enabledPredicate = section === "price" ? isProviderPriceVisible : isProviderSearchEnabled;
+    const activeProviders = getAllProviderSites().filter((site) => enabledPredicate(state, site));
+    if (!activeProviders.length) {
+      host.innerHTML = `<span class="provider-chip provider-chip--empty">${escapeHtml(
+        TRANSLATIONS[language].providerNoActive
+      )}</span>`;
+      return;
+    }
+    host.innerHTML = activeProviders
+      .map((site) => `<span class="provider-chip">${escapeHtml(siteLabelFor(site, language))}</span>`)
+      .join("");
+  }
+
+  function getAllProviderSites() {
+    return ALL_PROVIDER_SITES.slice();
+  }
+
   function isProviderSearchEnabled(state, site) {
     const map = state?.providerSearchEnabled || {};
     return map[site] !== false;
@@ -1556,7 +1639,7 @@
   }
 
   function getProviderOrderForSource(sourceSite) {
-    const allProviders = ["torob", "digikala", "technolife", "emalls", "amazon", "ebay"];
+    const allProviders = getAllProviderSites();
     if (!allProviders.includes(sourceSite)) {
       return allProviders;
     }
@@ -1565,21 +1648,21 @@
 
   function buildTargetSearchUrl(site, query) {
     if (site === "digikala") {
-      return globalThis.DirobNormalize.buildDigikalaSearchUrl(query);
+      return globalThis.RashnuNormalize.buildDigikalaSearchUrl(query);
     }
     if (site === "technolife") {
-      return globalThis.DirobNormalize.buildTechnolifeSearchUrl(query);
+      return globalThis.RashnuNormalize.buildTechnolifeSearchUrl(query);
     }
     if (site === "emalls") {
-      return globalThis.DirobNormalize.buildEmallsSearchUrl(query);
+      return globalThis.RashnuNormalize.buildEmallsSearchUrl(query);
     }
     if (site === "amazon") {
-      return globalThis.DirobNormalize.buildAmazonSearchUrl(query);
+      return globalThis.RashnuNormalize.buildAmazonSearchUrl(query);
     }
     if (site === "ebay") {
-      return globalThis.DirobNormalize.buildEbaySearchUrl(query);
+      return globalThis.RashnuNormalize.buildEbaySearchUrl(query);
     }
-    return globalThis.DirobNormalize.buildTorobSearchUrl(query);
+    return globalThis.RashnuNormalize.buildTorobSearchUrl(query);
   }
 
   function extensionAssetUrl(path) {

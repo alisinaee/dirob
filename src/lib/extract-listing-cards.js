@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const normalizeApi = globalThis.DirobNormalize;
+  const normalizeApi = globalThis.RashnuNormalize;
   const TITLE_SELECTORS = [
     "[data-testid*='title']",
     'a[aria-label]',
@@ -50,8 +50,8 @@
     /ارسال/u,
     /تخفیف/u
   ];
-  const DIROB_IGNORE_SELECTOR =
-    '[data-dirob-guide-badge], [data-dirob-highlight="true"], #dirob-selection-style, [data-dirob-role]';
+  const RASHNU_IGNORE_SELECTOR =
+    '[data-rashnu-guide-badge], [data-rashnu-highlight="true"], #rashnu-selection-style, [data-rashnu-role]';
   const DIGIKALA_CURRENT_PRICE_SELECTORS = [
     '[data-testid="price-final"]',
     '[data-testid="price-current"]',
@@ -596,13 +596,25 @@
   }
 
   function pickDigikalaDetailPriceInfo() {
-    const strictCurrent = textFromDocument([
-      '[data-testid="price-final"]',
-      '[data-testid="price-current"]',
-      '[data-testid="price-no-discount"]'
-    ]);
-    const strictOriginal = textFromDocument(DIGIKALA_ORIGINAL_PRICE_SELECTORS);
-    const strictDiscount = pickDiscountPercent(document, DIGIKALA_DISCOUNT_PERCENT_SELECTORS);
+    const addToCartRoot = findDigikalaBuyBoxRoot();
+    const strictRoot = addToCartRoot || document;
+    const strictCurrent =
+      chooseBestPriceText(collectPriceNodes(strictRoot, DIGIKALA_CURRENT_PRICE_SELECTORS), {
+        preferHighestValue: true
+      }) ||
+      chooseBestPriceText(collectPriceNodes(document, DIGIKALA_CURRENT_PRICE_SELECTORS), {
+        preferHighestValue: true
+      });
+    const strictOriginal =
+      chooseBestPriceText(collectPriceNodes(strictRoot, DIGIKALA_ORIGINAL_PRICE_SELECTORS), {
+        preferHighestValue: true
+      }) ||
+      chooseBestPriceText(collectPriceNodes(document, DIGIKALA_ORIGINAL_PRICE_SELECTORS), {
+        preferHighestValue: true
+      });
+    const strictDiscount =
+      pickDiscountPercent(strictRoot, DIGIKALA_DISCOUNT_PERCENT_SELECTORS) ||
+      pickDiscountPercent(document, DIGIKALA_DISCOUNT_PERCENT_SELECTORS);
     const strictCurrentValue = normalizeApi.parsePriceValue(strictCurrent || "");
     if (strictCurrentValue) {
       const strictOriginalValue = normalizeApi.parsePriceValue(strictOriginal || "");
@@ -621,7 +633,6 @@
       };
     }
 
-    const addToCartRoot = findDigikalaBuyBoxRoot();
     if (addToCartRoot) {
       const buyBoxPriceInfo = pickPriceInfo(addToCartRoot, "digikala", {
         preferHighestValue: true
@@ -1835,7 +1846,7 @@
   }
 
   function isIgnoredNode(node) {
-    return Boolean(node?.closest?.(DIROB_IGNORE_SELECTOR));
+    return Boolean(node?.closest?.(RASHNU_IGNORE_SELECTOR));
   }
 
   function isNodeRendered(node, options = {}) {
@@ -1875,7 +1886,7 @@
     return scanListingCards();
   }
 
-  globalThis.DirobListingExtractor = {
+  globalThis.RashnuListingExtractor = {
     getPageContext,
     scanListingCards,
     scanPageItems,

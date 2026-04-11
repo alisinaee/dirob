@@ -12,16 +12,52 @@
 - Retain only the latest 20 change entries.
 - Support general Digikala listing pages; do not limit the MVP to phone pages only.
 - Reuse researched repo logic as reference material instead of starting from zero.
-- Use a real Chrome side panel instead of a popup when presenting Dirob.
+- Use a real Chrome side panel instead of a popup when presenting Rashnu.
 - Support reverse comparison on Torob pages by showing Digikala results.
-- Ensure we need to gather all logs from this dirob so you can find the issue bugs or other things by read that file to know and fix them.
+- Ensure we need to gather all logs from this rashnu so you can find the issue bugs or other things by read that file to know and fix them.
 - Ensure not loaded images should just show a minimal icon.
-- Ensure dirob should work on Torob and Digikala product detail pages too.
+- Ensure rashnu should work on Torob and Digikala product detail pages too.
 - Ensure top reload should work without refreshing the page.
 - Ensure changing lang should not require refreshing.
 - Ensure in RTL the per-item corner tools (reload/find) should be on the left side to avoid overlap with title/status content.
 
 ## Recent Changes (Last 20)
+### 2026-04-11T11:43:56+03:30
+- Changed files: `manifest.json`, `README.md`, `src/background.js`, `src/content.js`, `src/help/help.html`, `src/help/help.js`, `src/lib/extract-listing-cards.js`, `src/lib/logger.js`, +11 more
+- Summary: Renamed GitHub repository to alisinaee/rashnu and performed full project token rename from dirob/Dirob/DIROB to rashnu/Rashnu/RASHNU, including helper script filenames and artifact paths.
+- Behavior impact: Recorded code-level deltas for future AI context.
+<!-- fingerprint:53a51a4275ae -->
+
+### 2026-04-11T10:55:38+03:30
+- Changed files: `manifest.json`, `src/background.js`, `assets/extension-icons/icon-active-16.png`, `assets/extension-icons/icon-active-32.png`, `assets/extension-icons/icon-active-48.png`, `assets/extension-icons/icon-active-128.png`, `assets/extension-icons/icon-inactive-16.png`, `assets/extension-icons/icon-inactive-32.png`, +2 more
+- Summary: Added Rashnu extension toolbar/manifest icons and dynamic active-state icon switching (background color appears only when side panel is open/active).
+- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
+<!-- fingerprint:b7268677926f -->
+
+### 2026-04-11T10:53:04+03:30
+- Changed files: `src/lib/extract-listing-cards.js`
+- Summary: Fixed Digikala detail price extraction to avoid insurance/add-on prices by selecting best strict price candidates from buy-box scope instead of first global price-final match.
+- Behavior impact: Recorded code-level deltas for future AI context.
+<!-- fingerprint:800be745567b -->
+
+### 2026-04-11T10:39:08+03:30
+- Changed files: `src/panel/panel.html`, `src/panel/panel.js`, `src/panel/panel.css`
+- Summary: Simplified compact provider summary UI: title is 'Active Providers', removed extra compact text/labels, and made chip rows responsive (wide: one-row layout, narrow: stacked/two-row).
+- Behavior impact: Recorded code-level deltas for future AI context.
+<!-- fingerprint:c934dbc1e0a8 -->
+
+### 2026-04-11T10:33:14+03:30
+- Changed files: `manifest.json`, `src/panel/panel.html`, `src/panel/panel.js`, `src/help/help.html`, `src/help/help.js`, `src/sidebar.js`, `README.md`, `docs/extension-mvp-checklist.md`
+- Summary: Renamed product branding from Rashnu to Rashnu in user-facing metadata/UI/docs and fixed panel header version badge to 0.0.3.
+- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
+<!-- fingerprint:d26be2ed6fdc -->
+
+### 2026-04-11T10:27:41+03:30
+- Changed files: `src/panel/panel.html`, `src/panel/panel.js`, `src/panel/panel.css`
+- Summary: Made provider settings section collapsible with compact active-chip summary in minimal mode and expandable full controls for editing.
+- Behavior impact: Recorded code-level deltas for future AI context.
+<!-- fingerprint:5c2655dc36f5 -->
+
 ### 2026-04-10T22:07:36+03:30
 - Changed files: `README.md`, `manifest.json`, `src/background.js`, `src/help/help.html`, `src/help/help.js`, `src/lib/extract-listing-cards.js`, `src/lib/normalize.js`, `src/panel/panel.js`
 - Summary: Added source-site support for Emalls/Amazon/eBay in extractor/background, hardened Emalls matching with JSON+HTML fallback, improved price parsing, and refreshed panel/help/readme copy for 6 supported providers.
@@ -106,41 +142,5 @@
 - Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
 <!-- fingerprint:72ca5b4f58c4 -->
 
-### 2026-04-09T12:35:14+03:30
-- Changed files: `src/panel/panel.js`, `src/background.js`, `src/content.js`
-- Summary: Added a panel-open connection channel (`runtime.connect`) to drive a shared `dirobPanelActive` state, disabled on-page guide/highlight behavior when panel is closed, and strengthened navigation resync on tab/url/back-forward events (including `pageshow`) plus auto-rescan on panel activation.
-- Behavior impact: Added or refreshed 2 behavior rule(s) from user instructions.
-<!-- fingerprint:1b28aab5ea74 -->
-
-### 2026-04-09T12:25:02+03:30
-- Changed files: `src/content.js`
-- Summary: Added navigation rescan retries after URL changes (state reset + delayed repeated `notifyPageState/refreshCards`) so SPA transitions settle and Dirob updates automatically without manual refresh.
-- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
-<!-- fingerprint:866dc4af6581 -->
-
-### 2026-04-09T12:05:45+03:30
-- Changed files: `src/panel/panel.js`
-- Summary: Removed per-item raw debug payload rendering from panel cards while keeping debug mode available for diagnostics/status behavior.
-- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
-<!-- fingerprint:bbf24e372e79 -->
-
-### 2026-04-09T12:04:18+03:30
-- Changed files: `src/content.js`, `src/background.js`
-- Summary: Added explicit SPA navigation URL-change detection in content script (`pushState`/`replaceState`/`popstate`/poll) and changed background sync reconciliation to delete untouched rows and related caches so old-page products cannot persist in panel state.
-- Behavior impact: Added or refreshed 2 behavior rule(s) from user instructions.
-<!-- fingerprint:eb9f1d4b6132 -->
-
-### 2026-04-09T11:13:18+03:30
-- Changed files: `README.md`
-- Summary: Rewrote install guidance as a dedicated “Install In Chrome (Unofficial / Unpacked)” section with explicit `chrome://extensions` developer-mode steps, load-unpacked flow, and reload instructions.
-- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
-<!-- fingerprint:34a69a4fdc4f -->
-
-### 2026-04-09T11:11:47+03:30
-- Changed files: `src/panel/panel.html`, `src/panel/panel.js`, `src/panel/panel.css`, `src/background.js`
-- Summary: Added a bottom "Export logs" action, hid the entire diagnostics/info block unless Debug is enabled, disabled the Auto Logs toggle while Debug is off, and enforced background log writes to run only when both Debug and Auto Logs are enabled.
-- Behavior impact: Added or refreshed 3 behavior rule(s) from user instructions.
-<!-- fingerprint:b46633e2a343 -->
-
 ## Last Updated
-- 2026-04-10T22:07:36+03:30
+- 2026-04-11T11:43:56+03:30

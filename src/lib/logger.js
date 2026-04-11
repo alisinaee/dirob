@@ -33,7 +33,7 @@
 
     try {
       chrome.runtime.sendMessage({
-        type: "DIROB_LOG_EVENT",
+        type: "RASHNU_LOG_EVENT",
         payload: entry
       }).catch(() => {});
     } catch (_error) {
@@ -52,7 +52,7 @@
     });
   }
 
-  globalThis.DirobLogger = {
+  globalThis.RashnuLogger = {
     debug(scope, message, details) {
       log("debug", scope, message, details);
     },

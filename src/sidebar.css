@@ -14,7 +14,7 @@
   font-display: swap;
 }
 
-#dirob-root {
+#rashnu-root {
   all: initial;
   position: fixed;
   top: 16px;
@@ -26,7 +26,7 @@
   font-family: "Vazir", "Vazirmatn", Tahoma, "Segoe UI", sans-serif;
 }
 
-#dirob-root .dirob-shell {
+#rashnu-root .rashnu-shell {
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -40,31 +40,31 @@
   backdrop-filter: blur(12px);
 }
 
-#dirob-root .dirob-header {
+#rashnu-root .rashnu-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 8px;
 }
 
-#dirob-root .dirob-header h1 {
+#rashnu-root .rashnu-header h1 {
   margin: 0 0 4px;
   font-size: 18px;
   font-weight: 700;
 }
 
-#dirob-root .dirob-header p,
-#dirob-root .dirob-summary,
-#dirob-root .dirob-meta,
-#dirob-root .dirob-subtitle,
-#dirob-root .dirob-link,
-#dirob-root .dirob-debug {
+#rashnu-root .rashnu-header p,
+#rashnu-root .rashnu-summary,
+#rashnu-root .rashnu-meta,
+#rashnu-root .rashnu-subtitle,
+#rashnu-root .rashnu-link,
+#rashnu-root .rashnu-debug {
   margin: 0;
   font-size: 12px;
   line-height: 1.5;
 }
 
-#dirob-root .dirob-pill {
+#rashnu-root .rashnu-pill {
   padding: 4px 10px;
   border-radius: 999px;
   background: #0f172a;
@@ -72,14 +72,14 @@
   font-size: 11px;
 }
 
-#dirob-root .dirob-summary {
+#rashnu-root .rashnu-summary {
   padding: 10px 12px;
   border-radius: 12px;
   background: #f8fafc;
   color: #334155;
 }
 
-#dirob-root .dirob-list {
+#rashnu-root .rashnu-list {
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -87,7 +87,7 @@
   padding-right: 2px;
 }
 
-#dirob-root .dirob-card {
+#rashnu-root .rashnu-card {
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -97,18 +97,18 @@
   background: white;
 }
 
-#dirob-root .dirob-card[data-visible="true"] {
+#rashnu-root .rashnu-card[data-visible="true"] {
   border-color: #fb923c;
   box-shadow: inset 0 0 0 1px rgba(251, 146, 60, 0.18);
 }
 
-#dirob-root .dirob-row {
+#rashnu-root .rashnu-row {
   display: flex;
   align-items: flex-start;
   gap: 10px;
 }
 
-#dirob-root .dirob-thumb {
+#rashnu-root .rashnu-thumb {
   flex: 0 0 54px;
   width: 54px;
   height: 54px;
@@ -117,7 +117,7 @@
   background: #f1f5f9;
 }
 
-#dirob-root .dirob-thumb--empty {
+#rashnu-root .rashnu-thumb--empty {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -125,7 +125,7 @@
   font-size: 10px;
 }
 
-#dirob-root .dirob-body {
+#rashnu-root .rashnu-body {
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -133,60 +133,60 @@
   min-width: 0;
 }
 
-#dirob-root .dirob-title {
+#rashnu-root .rashnu-title {
   margin: 0;
   font-size: 13px;
   line-height: 1.55;
   color: #0f172a;
 }
 
-#dirob-root .dirob-price-grid {
+#rashnu-root .rashnu-price-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
 }
 
-#dirob-root .dirob-price-box {
+#rashnu-root .rashnu-price-box {
   padding: 8px;
   border-radius: 12px;
   background: #f8fafc;
 }
 
-#dirob-root .dirob-label {
+#rashnu-root .rashnu-label {
   display: block;
   margin-bottom: 2px;
   color: #64748b;
   font-size: 11px;
 }
 
-#dirob-root .dirob-value {
+#rashnu-root .rashnu-value {
   display: block;
   font-size: 12px;
   font-weight: 700;
   line-height: 1.4;
 }
 
-#dirob-root .dirob-meta {
+#rashnu-root .rashnu-meta {
   color: #475569;
 }
 
-#dirob-root .dirob-links {
+#rashnu-root .rashnu-links {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
-#dirob-root .dirob-link {
+#rashnu-root .rashnu-link {
   color: #0f766e;
   text-decoration: none;
   font-weight: 600;
 }
 
-#dirob-root .dirob-link:hover {
+#rashnu-root .rashnu-link:hover {
   text-decoration: underline;
 }
 
-#dirob-root .dirob-status {
+#rashnu-root .rashnu-status {
   display: inline-flex;
   width: fit-content;
   padding: 4px 8px;
@@ -195,32 +195,32 @@
   font-weight: 700;
 }
 
-#dirob-root .dirob-status--loading {
+#rashnu-root .rashnu-status--loading {
   background: #e0f2fe;
   color: #0369a1;
 }
 
-#dirob-root .dirob-status--matched {
+#rashnu-root .rashnu-status--matched {
   background: #dcfce7;
   color: #166534;
 }
 
-#dirob-root .dirob-status--low_confidence {
+#rashnu-root .rashnu-status--low_confidence {
   background: #fef3c7;
   color: #92400e;
 }
 
-#dirob-root .dirob-status--not_found {
+#rashnu-root .rashnu-status--not_found {
   background: #e2e8f0;
   color: #334155;
 }
 
-#dirob-root .dirob-status--error {
+#rashnu-root .rashnu-status--error {
   background: #fee2e2;
   color: #b91c1c;
 }
 
-#dirob-root .dirob-debug {
+#rashnu-root .rashnu-debug {
   padding: 8px;
   border-radius: 12px;
   background: #0f172a;

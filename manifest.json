@@ -1,8 +1,14 @@
 {
   "manifest_version": 3,
-  "name": "Dirob",
+  "name": "Rashnu",
   "version": "0.0.3",
   "description": "Compare listings across Digikala, Torob, Technolife, Emalls, Amazon, and eBay.",
+  "icons": {
+    "16": "assets/extension-icons/icon-inactive-16.png",
+    "32": "assets/extension-icons/icon-inactive-32.png",
+    "48": "assets/extension-icons/icon-inactive-48.png",
+    "128": "assets/extension-icons/icon-inactive-128.png"
+  },
   "permissions": ["activeTab", "storage", "scripting", "tabs", "sidePanel", "downloads", "webNavigation"],
   "host_permissions": [
     "https://www.digikala.com/*",
@@ -22,7 +28,12 @@
     "http://localhost:45173/*"
   ],
   "action": {
-    "default_title": "Dirob"
+    "default_title": "Rashnu",
+    "default_icon": {
+      "16": "assets/extension-icons/icon-inactive-16.png",
+      "32": "assets/extension-icons/icon-inactive-32.png",
+      "48": "assets/extension-icons/icon-inactive-48.png"
+    }
   },
   "side_panel": {
     "default_path": "src/panel/panel.html"

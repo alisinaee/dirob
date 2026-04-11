@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Dirob</title>
+    <title>Rashnu</title>
     <link rel="stylesheet" href="panel.css">
   </head>
   <body>
@@ -16,14 +16,14 @@
         </div>
         <a
           class="brand-block"
-          href="https://github.com/alisinaee/dirob"
+          href="https://github.com/alisinaee/rashnu"
           target="_blank"
           rel="noreferrer noopener"
         >
-          <div class="brand-mark">D</div>
+          <div class="brand-mark">R</div>
           <div>
-            <h1>Dirob</h1>
-            <p class="brand-version">0.0.2</p>
+            <h1>Rashnu</h1>
+            <p class="brand-version">0.0.3</p>
           </div>
         </a>
       </header>
@@ -64,69 +64,90 @@
               <span class="switch-control" aria-hidden="true"><span class="switch-thumb"></span></span>
             </button>
           </div>
-          <div class="provider-sections">
-            <div class="provider-card">
-              <span class="paired-label" data-provider-section-label="search">Search Buttons</span>
-              <div class="provider-grid">
-                <button class="switch-row switch-row--provider" data-action="toggle-provider-search" data-provider="torob" type="button">
-                  <span class="switch-label" data-provider-label="torob">Torob</span>
-                  <span class="switch-control" aria-hidden="true"><span class="switch-thumb"></span></span>
-                </button>
-                <button class="switch-row switch-row--provider" data-action="toggle-provider-search" data-provider="digikala" type="button">
-                  <span class="switch-label" data-provider-label="digikala">Digikala</span>
-                  <span class="switch-control" aria-hidden="true"><span class="switch-thumb"></span></span>
-                </button>
-                <button class="switch-row switch-row--provider" data-action="toggle-provider-search" data-provider="technolife" type="button">
-                  <span class="switch-label" data-provider-label="technolife">Technolife</span>
-                  <span class="switch-control" aria-hidden="true"><span class="switch-thumb"></span></span>
-                </button>
-                <button class="switch-row switch-row--provider" data-action="toggle-provider-search" data-provider="emalls" type="button">
-                  <span class="switch-label" data-provider-label="emalls">Emalls</span>
-                  <span class="switch-control" aria-hidden="true"><span class="switch-thumb"></span></span>
-                </button>
-                <button class="switch-row switch-row--provider" data-action="toggle-provider-search" data-provider="amazon" type="button">
-                  <span class="switch-label" data-provider-label="amazon">Amazon</span>
-                  <span class="switch-control" aria-hidden="true"><span class="switch-thumb"></span></span>
-                </button>
-                <button class="switch-row switch-row--provider" data-action="toggle-provider-search" data-provider="ebay" type="button">
-                  <span class="switch-label" data-provider-label="ebay">eBay</span>
-                  <span class="switch-control" aria-hidden="true"><span class="switch-thumb"></span></span>
-                </button>
+          <section class="provider-settings-block is-expanded" data-provider-settings-block>
+            <button
+              class="provider-settings-toggle"
+              data-action="toggle-provider-settings-editor"
+              type="button"
+              aria-expanded="true"
+            >
+              <span class="provider-settings-heading">
+                <span class="paired-label provider-settings-title" data-provider-settings-title>Active Providers</span>
+              </span>
+              <span class="provider-settings-toggle-icon" aria-hidden="true">▾</span>
+            </button>
+            <div class="provider-summary" data-provider-summary>
+              <div class="provider-summary-row">
+                <div class="provider-chip-list" data-provider-active-chips="search"></div>
+              </div>
+              <div class="provider-summary-row">
+                <div class="provider-chip-list" data-provider-active-chips="price"></div>
               </div>
             </div>
-            <div class="provider-card">
-              <span class="paired-label" data-provider-section-label="price">Show Prices</span>
-              <div class="provider-grid">
-                <button class="switch-row switch-row--provider" data-action="toggle-provider-price" data-provider="torob" type="button">
-                  <span class="switch-label" data-provider-label="torob">Torob</span>
-                  <span class="switch-control" aria-hidden="true"><span class="switch-thumb"></span></span>
-                </button>
-                <button class="switch-row switch-row--provider" data-action="toggle-provider-price" data-provider="digikala" type="button">
-                  <span class="switch-label" data-provider-label="digikala">Digikala</span>
-                  <span class="switch-control" aria-hidden="true"><span class="switch-thumb"></span></span>
-                </button>
-                <button class="switch-row switch-row--provider" data-action="toggle-provider-price" data-provider="technolife" type="button">
-                  <span class="switch-label" data-provider-label="technolife">Technolife</span>
-                  <span class="switch-control" aria-hidden="true"><span class="switch-thumb"></span></span>
-                </button>
-                <button class="switch-row switch-row--provider" data-action="toggle-provider-price" data-provider="emalls" type="button">
-                  <span class="switch-label" data-provider-label="emalls">Emalls</span>
-                  <span class="switch-control" aria-hidden="true"><span class="switch-thumb"></span></span>
-                </button>
-                <button class="switch-row switch-row--provider" data-action="toggle-provider-price" data-provider="amazon" type="button">
-                  <span class="switch-label" data-provider-label="amazon">Amazon</span>
-                  <span class="switch-control" aria-hidden="true"><span class="switch-thumb"></span></span>
-                </button>
-                <button class="switch-row switch-row--provider" data-action="toggle-provider-price" data-provider="ebay" type="button">
-                  <span class="switch-label" data-provider-label="ebay">eBay</span>
-                  <span class="switch-control" aria-hidden="true"><span class="switch-thumb"></span></span>
-                </button>
+            <div class="provider-sections">
+              <div class="provider-card">
+                <span class="paired-label" data-provider-section-label="search">Search Buttons</span>
+                <div class="provider-grid">
+                  <button class="switch-row switch-row--provider" data-action="toggle-provider-search" data-provider="torob" type="button">
+                    <span class="switch-label" data-provider-label="torob">Torob</span>
+                    <span class="switch-control" aria-hidden="true"><span class="switch-thumb"></span></span>
+                  </button>
+                  <button class="switch-row switch-row--provider" data-action="toggle-provider-search" data-provider="digikala" type="button">
+                    <span class="switch-label" data-provider-label="digikala">Digikala</span>
+                    <span class="switch-control" aria-hidden="true"><span class="switch-thumb"></span></span>
+                  </button>
+                  <button class="switch-row switch-row--provider" data-action="toggle-provider-search" data-provider="technolife" type="button">
+                    <span class="switch-label" data-provider-label="technolife">Technolife</span>
+                    <span class="switch-control" aria-hidden="true"><span class="switch-thumb"></span></span>
+                  </button>
+                  <button class="switch-row switch-row--provider" data-action="toggle-provider-search" data-provider="emalls" type="button">
+                    <span class="switch-label" data-provider-label="emalls">Emalls</span>
+                    <span class="switch-control" aria-hidden="true"><span class="switch-thumb"></span></span>
+                  </button>
+                  <button class="switch-row switch-row--provider" data-action="toggle-provider-search" data-provider="amazon" type="button">
+                    <span class="switch-label" data-provider-label="amazon">Amazon</span>
+                    <span class="switch-control" aria-hidden="true"><span class="switch-thumb"></span></span>
+                  </button>
+                  <button class="switch-row switch-row--provider" data-action="toggle-provider-search" data-provider="ebay" type="button">
+                    <span class="switch-label" data-provider-label="ebay">eBay</span>
+                    <span class="switch-control" aria-hidden="true"><span class="switch-thumb"></span></span>
+                  </button>
+                </div>
+              </div>
+              <div class="provider-card">
+                <span class="paired-label" data-provider-section-label="price">Show Prices</span>
+                <div class="provider-grid">
+                  <button class="switch-row switch-row--provider" data-action="toggle-provider-price" data-provider="torob" type="button">
+                    <span class="switch-label" data-provider-label="torob">Torob</span>
+                    <span class="switch-control" aria-hidden="true"><span class="switch-thumb"></span></span>
+                  </button>
+                  <button class="switch-row switch-row--provider" data-action="toggle-provider-price" data-provider="digikala" type="button">
+                    <span class="switch-label" data-provider-label="digikala">Digikala</span>
+                    <span class="switch-control" aria-hidden="true"><span class="switch-thumb"></span></span>
+                  </button>
+                  <button class="switch-row switch-row--provider" data-action="toggle-provider-price" data-provider="technolife" type="button">
+                    <span class="switch-label" data-provider-label="technolife">Technolife</span>
+                    <span class="switch-control" aria-hidden="true"><span class="switch-thumb"></span></span>
+                  </button>
+                  <button class="switch-row switch-row--provider" data-action="toggle-provider-price" data-provider="emalls" type="button">
+                    <span class="switch-label" data-provider-label="emalls">Emalls</span>
+                    <span class="switch-control" aria-hidden="true"><span class="switch-thumb"></span></span>
+                  </button>
+                  <button class="switch-row switch-row--provider" data-action="toggle-provider-price" data-provider="amazon" type="button">
+                    <span class="switch-label" data-provider-label="amazon">Amazon</span>
+                    <span class="switch-control" aria-hidden="true"><span class="switch-thumb"></span></span>
+                  </button>
+                  <button class="switch-row switch-row--provider" data-action="toggle-provider-price" data-provider="ebay" type="button">
+                    <span class="switch-label" data-provider-label="ebay">eBay</span>
+                    <span class="switch-control" aria-hidden="true"><span class="switch-thumb"></span></span>
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-          <p class="settings-help settings-provider-warning" data-provider-warning>
-            Amazon and eBay may detect extension traffic as bot activity, so results are not always reliable.
-          </p>
+            <p class="settings-help settings-provider-warning" data-provider-warning>
+              Amazon and eBay may detect extension traffic as bot activity, so results are not always reliable.
+            </p>
+          </section>
           <div class="settings-grid settings-grid--paired">
             <div class="paired-card">
               <span class="paired-label" data-layout-label>چیدمان</span>
@@ -155,7 +176,7 @@
             </div>
           </div>
           <p class="settings-help settings-help--helper-status" data-log-helper-status>Logger offline</p>
-          <p class="settings-help settings-help--path" data-log-path>لاگ‌ها در research/artifacts/dirob ذخیره می‌شوند.</p>
+          <p class="settings-help settings-help--path" data-log-path>لاگ‌ها در research/artifacts/rashnu ذخیره می‌شوند.</p>
         </div>
       </section>
 

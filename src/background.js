@@ -9,7 +9,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
   const MAX_CONCURRENCY = 4;
   const MAX_LOG_ENTRIES = 500;
   const MAX_AUTO_RETRIES = 3;
-  const LOG_STORAGE_KEY = "dirobLogs";
+  const LOG_STORAGE_KEY = "rashnuLogs";
   const LOG_HELPER_BASE_URL = "http://127.0.0.1:45173";
   const LOG_FLUSH_BATCH_SIZE = 20;
   const NAVIGATION_RESCAN_DEBOUNCE_MS = 220;
@@ -17,6 +17,18 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
   const QUERY_TRANSLATION_CACHE_TTL_MS = 12 * 60 * 60 * 1000;
   const QUERY_TRANSLATION_FAILURE_CACHE_TTL_MS = 5 * 60 * 1000;
   const MARKETPLACE_PROXY_BASE_URL = "https://r.jina.ai/http://";
+  const ACTION_ICON_PATHS = {
+    inactive: {
+      16: "assets/extension-icons/icon-inactive-16.png",
+      32: "assets/extension-icons/icon-inactive-32.png",
+      48: "assets/extension-icons/icon-inactive-48.png"
+    },
+    active: {
+      16: "assets/extension-icons/icon-active-16.png",
+      32: "assets/extension-icons/icon-active-32.png",
+      48: "assets/extension-icons/icon-active-48.png"
+    }
+  };
   const MARKETPLACE_QUERY_REPLACEMENTS = [
     [/(?:گوشی\s*موبایل|موبایل)/gu, "mobile phone"],
     [/گوشی/gu, "phone"],
@@ -48,8 +60,8 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     [/خاکستری/gu, "gray"]
   ];
   const PROVIDER_SITES = ["torob", "digikala", "technolife", "emalls", "amazon", "ebay"];
-  const AMAZON_API_CREDENTIALS_KEY = "dirobAmazonApiCredentials";
-  const EBAY_API_CREDENTIALS_KEY = "dirobEbayApiCredentials";
+  const AMAZON_API_CREDENTIALS_KEY = "rashnuAmazonApiCredentials";
+  const EBAY_API_CREDENTIALS_KEY = "rashnuEbayApiCredentials";
   const inFlightQueries = new Map();
   const inFlightSourceResolvers = new Map();
   const queryTranslationCache = new Map();
@@ -88,15 +100,16 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     connected: false,
     lastCheckedAt: null,
     lastError: null,
-    artifactDir: "research/artifacts/dirob",
-    logPath: "research/artifacts/dirob/dirob-live-log.ndjson",
-    statePath: "research/artifacts/dirob/dirob-state.json"
+    artifactDir: "research/artifacts/rashnu",
+    logPath: "research/artifacts/rashnu/rashnu-live-log.ndjson",
+    statePath: "research/artifacts/rashnu/rashnu-state.json"
   };
 
   initialize().catch(() => {});
 
   async function initialize() {
     await loadSettings();
+    await syncActionIcon();
     await setPanelActiveState(false, { force: true, triggerRescan: false });
     await loadLogs();
     await ensureLogHelperHealth();
@@ -110,39 +123,39 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
 
   async function loadSettings() {
     const stored = await chrome.storage.local.get([
-      "dirobDebugEnabled",
-      "dirobSelectionModeEnabled",
-      "dirobSyncPageViewEnabled",
-      "dirobGuideNumbersEnabled",
-      "dirobAutoLogsEnabled",
-      "dirobLanguage",
-      "dirobFontScale",
-      "dirobLayoutMode",
-      "dirobMinimalViewEnabled",
-      "dirobSettingsOpen",
-      "dirobThemeMode",
-      "dirobPanelActive",
-      "dirobProviderSearchEnabled",
-      "dirobProviderPriceVisible",
+      "rashnuDebugEnabled",
+      "rashnuSelectionModeEnabled",
+      "rashnuSyncPageViewEnabled",
+      "rashnuGuideNumbersEnabled",
+      "rashnuAutoLogsEnabled",
+      "rashnuLanguage",
+      "rashnuFontScale",
+      "rashnuLayoutMode",
+      "rashnuMinimalViewEnabled",
+      "rashnuSettingsOpen",
+      "rashnuThemeMode",
+      "rashnuPanelActive",
+      "rashnuProviderSearchEnabled",
+      "rashnuProviderPriceVisible",
       AMAZON_API_CREDENTIALS_KEY,
       EBAY_API_CREDENTIALS_KEY
     ]);
-    debugEnabled = Boolean(stored.dirobDebugEnabled);
-    selectionModeEnabled = Boolean(stored.dirobSelectionModeEnabled);
-    syncPageViewEnabled = Boolean(stored.dirobSyncPageViewEnabled);
-    guideNumbersEnabled = Boolean(stored.dirobGuideNumbersEnabled);
-    autoLogsEnabled = stored.dirobAutoLogsEnabled !== false;
-    panelLanguage = stored.dirobLanguage || "fa";
-    panelFontScale = clampFontScale(Number.isFinite(stored.dirobFontScale) ? stored.dirobFontScale : 0);
-    panelLayoutMode = stored.dirobLayoutMode === "grid" ? "grid" : "list";
-    minimalViewEnabled = Boolean(stored.dirobMinimalViewEnabled);
-    settingsOpen = Boolean(stored.dirobSettingsOpen);
-    themeMode = ["system", "dark", "light"].includes(stored.dirobThemeMode) ? stored.dirobThemeMode : "system";
-    panelActive = Boolean(stored.dirobPanelActive);
+    debugEnabled = Boolean(stored.rashnuDebugEnabled);
+    selectionModeEnabled = Boolean(stored.rashnuSelectionModeEnabled);
+    syncPageViewEnabled = Boolean(stored.rashnuSyncPageViewEnabled);
+    guideNumbersEnabled = Boolean(stored.rashnuGuideNumbersEnabled);
+    autoLogsEnabled = stored.rashnuAutoLogsEnabled !== false;
+    panelLanguage = stored.rashnuLanguage || "fa";
+    panelFontScale = clampFontScale(Number.isFinite(stored.rashnuFontScale) ? stored.rashnuFontScale : 0);
+    panelLayoutMode = stored.rashnuLayoutMode === "grid" ? "grid" : "list";
+    minimalViewEnabled = Boolean(stored.rashnuMinimalViewEnabled);
+    settingsOpen = Boolean(stored.rashnuSettingsOpen);
+    themeMode = ["system", "dark", "light"].includes(stored.rashnuThemeMode) ? stored.rashnuThemeMode : "system";
+    panelActive = Boolean(stored.rashnuPanelActive);
     amazonApiCredentials = normalizeApiCredentialConfig(stored[AMAZON_API_CREDENTIALS_KEY]);
     ebayApiCredentials = normalizeApiCredentialConfig(stored[EBAY_API_CREDENTIALS_KEY]);
-    providerSearchEnabled = normalizeProviderFlags(stored.dirobProviderSearchEnabled);
-    providerPriceVisible = normalizeProviderFlags(stored.dirobProviderPriceVisible);
+    providerSearchEnabled = normalizeProviderFlags(stored.rashnuProviderSearchEnabled);
+    providerPriceVisible = normalizeProviderFlags(stored.rashnuProviderPriceVisible);
   }
 
   async function loadLogs() {
@@ -159,63 +172,64 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     if (areaName !== "local") {
       return;
     }
-    if (Object.prototype.hasOwnProperty.call(changes, "dirobDebugEnabled")) {
-      debugEnabled = Boolean(changes.dirobDebugEnabled.newValue);
+    if (Object.prototype.hasOwnProperty.call(changes, "rashnuDebugEnabled")) {
+      debugEnabled = Boolean(changes.rashnuDebugEnabled.newValue);
     }
-    if (Object.prototype.hasOwnProperty.call(changes, "dirobSelectionModeEnabled")) {
-      selectionModeEnabled = Boolean(changes.dirobSelectionModeEnabled.newValue);
+    if (Object.prototype.hasOwnProperty.call(changes, "rashnuSelectionModeEnabled")) {
+      selectionModeEnabled = Boolean(changes.rashnuSelectionModeEnabled.newValue);
       addLog("info", "background", "selection_mode_changed", {
         enabled: selectionModeEnabled
       });
       notifyPanels();
     }
-    if (Object.prototype.hasOwnProperty.call(changes, "dirobSyncPageViewEnabled")) {
-      syncPageViewEnabled = Boolean(changes.dirobSyncPageViewEnabled.newValue);
+    if (Object.prototype.hasOwnProperty.call(changes, "rashnuSyncPageViewEnabled")) {
+      syncPageViewEnabled = Boolean(changes.rashnuSyncPageViewEnabled.newValue);
       addLog("info", "background", "sync_page_view_changed", {
         enabled: syncPageViewEnabled
       });
       notifyPanels();
     }
-    if (Object.prototype.hasOwnProperty.call(changes, "dirobGuideNumbersEnabled")) {
-      guideNumbersEnabled = Boolean(changes.dirobGuideNumbersEnabled.newValue);
+    if (Object.prototype.hasOwnProperty.call(changes, "rashnuGuideNumbersEnabled")) {
+      guideNumbersEnabled = Boolean(changes.rashnuGuideNumbersEnabled.newValue);
       addLog("info", "background", "guide_numbers_changed", {
         enabled: guideNumbersEnabled
       });
       notifyPanels();
     }
-    if (Object.prototype.hasOwnProperty.call(changes, "dirobAutoLogsEnabled")) {
-      autoLogsEnabled = changes.dirobAutoLogsEnabled.newValue !== false;
+    if (Object.prototype.hasOwnProperty.call(changes, "rashnuAutoLogsEnabled")) {
+      autoLogsEnabled = changes.rashnuAutoLogsEnabled.newValue !== false;
       notifyPanels();
     }
-    if (Object.prototype.hasOwnProperty.call(changes, "dirobLanguage")) {
-      panelLanguage = changes.dirobLanguage.newValue || "fa";
+    if (Object.prototype.hasOwnProperty.call(changes, "rashnuLanguage")) {
+      panelLanguage = changes.rashnuLanguage.newValue || "fa";
       notifyPanels();
     }
-    if (Object.prototype.hasOwnProperty.call(changes, "dirobFontScale")) {
-      const next = Number(changes.dirobFontScale.newValue);
+    if (Object.prototype.hasOwnProperty.call(changes, "rashnuFontScale")) {
+      const next = Number(changes.rashnuFontScale.newValue);
       panelFontScale = clampFontScale(Number.isFinite(next) ? next : 0);
       notifyPanels();
     }
-    if (Object.prototype.hasOwnProperty.call(changes, "dirobLayoutMode")) {
-      panelLayoutMode = changes.dirobLayoutMode.newValue === "grid" ? "grid" : "list";
+    if (Object.prototype.hasOwnProperty.call(changes, "rashnuLayoutMode")) {
+      panelLayoutMode = changes.rashnuLayoutMode.newValue === "grid" ? "grid" : "list";
       notifyPanels();
     }
-    if (Object.prototype.hasOwnProperty.call(changes, "dirobMinimalViewEnabled")) {
-      minimalViewEnabled = Boolean(changes.dirobMinimalViewEnabled.newValue);
+    if (Object.prototype.hasOwnProperty.call(changes, "rashnuMinimalViewEnabled")) {
+      minimalViewEnabled = Boolean(changes.rashnuMinimalViewEnabled.newValue);
       notifyPanels();
     }
-    if (Object.prototype.hasOwnProperty.call(changes, "dirobSettingsOpen")) {
-      settingsOpen = Boolean(changes.dirobSettingsOpen.newValue);
+    if (Object.prototype.hasOwnProperty.call(changes, "rashnuSettingsOpen")) {
+      settingsOpen = Boolean(changes.rashnuSettingsOpen.newValue);
       notifyPanels();
     }
-    if (Object.prototype.hasOwnProperty.call(changes, "dirobThemeMode")) {
-      themeMode = ["system", "dark", "light"].includes(changes.dirobThemeMode.newValue)
-        ? changes.dirobThemeMode.newValue
+    if (Object.prototype.hasOwnProperty.call(changes, "rashnuThemeMode")) {
+      themeMode = ["system", "dark", "light"].includes(changes.rashnuThemeMode.newValue)
+        ? changes.rashnuThemeMode.newValue
         : "system";
       notifyPanels();
     }
-    if (Object.prototype.hasOwnProperty.call(changes, "dirobPanelActive")) {
-      panelActive = Boolean(changes.dirobPanelActive.newValue);
+    if (Object.prototype.hasOwnProperty.call(changes, "rashnuPanelActive")) {
+      panelActive = Boolean(changes.rashnuPanelActive.newValue);
+      syncActionIcon().catch(() => {});
       notifyPanels();
     }
     if (Object.prototype.hasOwnProperty.call(changes, AMAZON_API_CREDENTIALS_KEY)) {
@@ -224,12 +238,12 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     if (Object.prototype.hasOwnProperty.call(changes, EBAY_API_CREDENTIALS_KEY)) {
       ebayApiCredentials = normalizeApiCredentialConfig(changes[EBAY_API_CREDENTIALS_KEY].newValue);
     }
-    if (Object.prototype.hasOwnProperty.call(changes, "dirobProviderSearchEnabled")) {
-      providerSearchEnabled = normalizeProviderFlags(changes.dirobProviderSearchEnabled.newValue);
+    if (Object.prototype.hasOwnProperty.call(changes, "rashnuProviderSearchEnabled")) {
+      providerSearchEnabled = normalizeProviderFlags(changes.rashnuProviderSearchEnabled.newValue);
       notifyPanels();
     }
-    if (Object.prototype.hasOwnProperty.call(changes, "dirobProviderPriceVisible")) {
-      providerPriceVisible = normalizeProviderFlags(changes.dirobProviderPriceVisible.newValue);
+    if (Object.prototype.hasOwnProperty.call(changes, "rashnuProviderPriceVisible")) {
+      providerPriceVisible = normalizeProviderFlags(changes.rashnuProviderPriceVisible.newValue);
       notifyPanels();
     }
   });
@@ -301,7 +315,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
   }
 
   chrome.runtime.onConnect.addListener((port) => {
-    if (port?.name !== "dirob-panel") {
+    if (port?.name !== "rashnu-panel") {
       return;
     }
     panelConnectionCount += 1;
@@ -319,12 +333,12 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       return false;
     }
 
-    if (message.type === "DIROB_PANEL_GET_STATE") {
+    if (message.type === "RASHNU_PANEL_GET_STATE") {
       getPanelState().then(sendResponse);
       return true;
     }
 
-    if (message.type === "DIROB_LOG_EVENT") {
+    if (message.type === "RASHNU_LOG_EVENT") {
       if (!debugEnabled || !autoLogsEnabled) {
         sendResponse({ ok: true, skipped: true });
         return false;
@@ -344,27 +358,27 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       return false;
     }
 
-    if (message.type === "DIROB_GET_LOGS") {
+    if (message.type === "RASHNU_GET_LOGS") {
       sendResponse({
         logs: [...logEntries]
       });
       return false;
     }
 
-    if (message.type === "DIROB_CLEAR_LOGS") {
+    if (message.type === "RASHNU_CLEAR_LOGS") {
       clearLogs().then(sendResponse);
       return true;
     }
 
-    if (message.type === "DIROB_EXPORT_LOGS") {
+    if (message.type === "RASHNU_EXPORT_LOGS") {
       exportLogs().then(sendResponse);
       return true;
     }
 
-    if (message.type === "DIROB_SET_DEBUG") {
+    if (message.type === "RASHNU_SET_DEBUG") {
       const enabled = Boolean(message.payload?.enabled);
       debugEnabled = enabled;
-      chrome.storage.local.set({ dirobDebugEnabled: enabled });
+      chrome.storage.local.set({ rashnuDebugEnabled: enabled });
        addLog("info", "background", "debug_changed", {
         enabled
       });
@@ -373,10 +387,10 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       return false;
     }
 
-    if (message.type === "DIROB_SET_SELECTION_MODE") {
+    if (message.type === "RASHNU_SET_SELECTION_MODE") {
       const enabled = Boolean(message.payload?.enabled);
       selectionModeEnabled = enabled;
-      chrome.storage.local.set({ dirobSelectionModeEnabled: enabled });
+      chrome.storage.local.set({ rashnuSelectionModeEnabled: enabled });
       addLog("info", "background", "selection_mode_changed", {
         enabled
       });
@@ -385,11 +399,11 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       return false;
     }
 
-    if (message.type === "DIROB_SET_AUTO_LOGS") {
+    if (message.type === "RASHNU_SET_AUTO_LOGS") {
       const enabled = Boolean(message.payload?.enabled);
       autoLogsEnabled = enabled;
       chrome.storage.local.set({
-        dirobAutoLogsEnabled: enabled
+        rashnuAutoLogsEnabled: enabled
       });
       if (enabled) {
         addLog("info", "background", "auto_logs_changed", {
@@ -401,11 +415,11 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       return false;
     }
 
-    if (message.type === "DIROB_SET_SYNC_PAGE_VIEW") {
+    if (message.type === "RASHNU_SET_SYNC_PAGE_VIEW") {
       const enabled = Boolean(message.payload?.enabled);
       syncPageViewEnabled = enabled;
       chrome.storage.local.set({
-        dirobSyncPageViewEnabled: enabled
+        rashnuSyncPageViewEnabled: enabled
       });
       addLog("info", "background", "sync_page_view_changed", {
         enabled
@@ -415,11 +429,11 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       return false;
     }
 
-    if (message.type === "DIROB_SET_GUIDE_NUMBERS") {
+    if (message.type === "RASHNU_SET_GUIDE_NUMBERS") {
       const enabled = Boolean(message.payload?.enabled);
       guideNumbersEnabled = enabled;
       chrome.storage.local.set({
-        dirobGuideNumbersEnabled: enabled
+        rashnuGuideNumbersEnabled: enabled
       });
       addLog("info", "background", "guide_numbers_changed", {
         enabled
@@ -429,70 +443,70 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       return false;
     }
 
-    if (message.type === "DIROB_SET_LANGUAGE") {
+    if (message.type === "RASHNU_SET_LANGUAGE") {
       panelLanguage = message.payload?.language === "en" ? "en" : "fa";
       chrome.storage.local.set({
-        dirobLanguage: panelLanguage
+        rashnuLanguage: panelLanguage
       });
       notifyPanels();
       sendResponse({ language: panelLanguage });
       return false;
     }
 
-    if (message.type === "DIROB_ADJUST_FONT_SCALE") {
+    if (message.type === "RASHNU_ADJUST_FONT_SCALE") {
       const delta = Number(message.payload?.delta || 0);
       panelFontScale = clampFontScale(panelFontScale + delta);
       chrome.storage.local.set({
-        dirobFontScale: panelFontScale
+        rashnuFontScale: panelFontScale
       });
       notifyPanels();
       sendResponse({ fontScale: panelFontScale });
       return false;
     }
 
-    if (message.type === "DIROB_SET_LAYOUT_MODE") {
+    if (message.type === "RASHNU_SET_LAYOUT_MODE") {
       panelLayoutMode = message.payload?.layoutMode === "grid" ? "grid" : "list";
       chrome.storage.local.set({
-        dirobLayoutMode: panelLayoutMode
+        rashnuLayoutMode: panelLayoutMode
       });
       notifyPanels();
       sendResponse({ layoutMode: panelLayoutMode });
       return false;
     }
 
-    if (message.type === "DIROB_SET_MINIMAL_VIEW") {
+    if (message.type === "RASHNU_SET_MINIMAL_VIEW") {
       minimalViewEnabled = Boolean(message.payload?.enabled);
       chrome.storage.local.set({
-        dirobMinimalViewEnabled: minimalViewEnabled
+        rashnuMinimalViewEnabled: minimalViewEnabled
       });
       notifyPanels();
       sendResponse({ enabled: minimalViewEnabled });
       return false;
     }
 
-    if (message.type === "DIROB_SET_SETTINGS_OPEN") {
+    if (message.type === "RASHNU_SET_SETTINGS_OPEN") {
       settingsOpen = Boolean(message.payload?.enabled);
       chrome.storage.local.set({
-        dirobSettingsOpen: settingsOpen
+        rashnuSettingsOpen: settingsOpen
       });
       notifyPanels();
       sendResponse({ enabled: settingsOpen });
       return false;
     }
 
-    if (message.type === "DIROB_SET_THEME_MODE") {
+    if (message.type === "RASHNU_SET_THEME_MODE") {
       themeMode = ["system", "dark", "light"].includes(message.payload?.themeMode)
         ? message.payload.themeMode
         : "system";
       chrome.storage.local.set({
-        dirobThemeMode: themeMode
+        rashnuThemeMode: themeMode
       });
       notifyPanels();
       sendResponse({ themeMode });
       return false;
     }
 
-    if (message.type === "DIROB_SET_PROVIDER_SEARCH") {
+    if (message.type === "RASHNU_SET_PROVIDER_SEARCH") {
       const provider = normalizeProviderSite(message.payload?.provider);
       if (!provider) {
         sendResponse({ ok: false, reason: "invalid_provider" });
@@ -503,7 +517,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
         [provider]: Boolean(message.payload?.enabled)
       };
       chrome.storage.local.set({
-        dirobProviderSearchEnabled: providerSearchEnabled
+        rashnuProviderSearchEnabled: providerSearchEnabled
       });
       refreshMatchesForEnabledProviders().catch(() => {});
       notifyPanels();
@@ -511,7 +525,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       return false;
     }
 
-    if (message.type === "DIROB_SET_PROVIDER_PRICE") {
+    if (message.type === "RASHNU_SET_PROVIDER_PRICE") {
       const provider = normalizeProviderSite(message.payload?.provider);
       if (!provider) {
         sendResponse({ ok: false, reason: "invalid_provider" });
@@ -522,14 +536,14 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
         [provider]: Boolean(message.payload?.enabled)
       };
       chrome.storage.local.set({
-        dirobProviderPriceVisible: providerPriceVisible
+        rashnuProviderPriceVisible: providerPriceVisible
       });
       notifyPanels();
       sendResponse({ ok: true, providerPriceVisible });
       return false;
     }
 
-    if (message.type === "DIROB_PAGE_CONTEXT") {
+    if (message.type === "RASHNU_PAGE_CONTEXT") {
       const tabId = sender.tab?.id;
       if (tabId != null) {
         const state = ensureTabState(tabId);
@@ -583,7 +597,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       return false;
     }
 
-    if (message.type === "DIROB_SYNC_ITEMS") {
+    if (message.type === "RASHNU_SYNC_ITEMS") {
       const tabId = sender.tab?.id;
       if (tabId != null) {
         const state = ensureTabState(tabId);
@@ -668,7 +682,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       return false;
     }
 
-    if (message.type === "DIROB_ITEM_FOCUS") {
+    if (message.type === "RASHNU_ITEM_FOCUS") {
       const tabId = sender.tab?.id;
       if (tabId != null && message.payload?.item) {
         const state = ensureTabState(tabId);
@@ -728,22 +742,22 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       return false;
     }
 
-    if (message.type === "DIROB_RELOAD_ALL") {
+    if (message.type === "RASHNU_RELOAD_ALL") {
       reloadAllForActiveTab().then(sendResponse);
       return true;
     }
 
-    if (message.type === "DIROB_RELOAD_ITEM") {
+    if (message.type === "RASHNU_RELOAD_ITEM") {
       reloadSingleForActiveTab(message.payload?.sourceId).then(sendResponse);
       return true;
     }
 
-    if (message.type === "DIROB_LOCATE_ITEM") {
+    if (message.type === "RASHNU_LOCATE_ITEM") {
       locateItemOnActiveTab(message.payload?.sourceId).then(sendResponse);
       return true;
     }
 
-    if (message.type === "DIROB_GUIDE_BADGE_HOVER") {
+    if (message.type === "RASHNU_GUIDE_BADGE_HOVER") {
       const tabId = sender.tab?.id;
       if (tabId != null) {
         const state = ensureTabState(tabId);
@@ -754,7 +768,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       return false;
     }
 
-    if (message.type === "DIROB_GUIDE_BADGE_CLICK") {
+    if (message.type === "RASHNU_GUIDE_BADGE_CLICK") {
       const tabId = sender.tab?.id;
       if (tabId != null) {
         const state = ensureTabState(tabId);
@@ -766,7 +780,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       return false;
     }
 
-    if (message.type === "DIROB_RESCAN_ACTIVE_TAB") {
+    if (message.type === "RASHNU_RESCAN_ACTIVE_TAB") {
       rescanActiveTab().then(sendResponse);
       return true;
     }
@@ -826,7 +840,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     if (typeof url !== "string" || !url) {
       return "";
     }
-    return globalThis.DirobNormalize.canonicalizeUrl(url, url) || url;
+    return globalThis.RashnuNormalize.canonicalizeUrl(url, url) || url;
   }
 
   function handleTopLevelNavigationEvent(tabId, nextUrl, source, extraDetails = null) {
@@ -1010,7 +1024,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     const row = state.rows.get(item.sourceId);
     const isManual = Boolean(options?.bustCache);
     const query = buildCleanMatchQuery(item);
-    const queryKey = `${item.sourceSite}:${targetSites.join(",")}:${globalThis.DirobNormalize.normalizeText(query)}`;
+    const queryKey = `${item.sourceSite}:${targetSites.join(",")}:${globalThis.RashnuNormalize.normalizeText(query)}`;
 
     if (row) {
       if (isManual) {
@@ -1067,7 +1081,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
             moreInfoUrl: null,
             sellerCount: null,
             reason: "loading",
-            googleUrl: globalThis.DirobNormalize.buildGoogleSearchUrl(item.title),
+            googleUrl: globalThis.RashnuNormalize.buildGoogleSearchUrl(item.title),
             searchUrl: buildSearchUrlForSite(site, item.title)
           };
         }
@@ -1084,7 +1098,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
           moreInfoUrl: null,
           sellerCount: null,
           reason: "loading",
-          googleUrl: globalThis.DirobNormalize.buildGoogleSearchUrl(item.title),
+          googleUrl: globalThis.RashnuNormalize.buildGoogleSearchUrl(item.title),
           searchUrl: buildSearchUrlForSite(targetSite, item.title),
           allResults: loadingResults
         };
@@ -1230,7 +1244,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       moreInfoUrl: null,
       sellerCount: null,
       reason: error?.message || "request_failed",
-      googleUrl: globalThis.DirobNormalize.buildGoogleSearchUrl(item.title),
+      googleUrl: globalThis.RashnuNormalize.buildGoogleSearchUrl(item.title),
       searchUrl: buildSearchUrlForSite(targetSite, query)
     };
   }
@@ -1248,12 +1262,12 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       targetOriginalPriceText: null,
       targetOriginalPriceValue: null,
       targetDiscountPercent: null,
-      targetUrl: globalThis.DirobNormalize.buildGoogleSearchUrl(item.title),
+      targetUrl: globalThis.RashnuNormalize.buildGoogleSearchUrl(item.title),
       moreInfoUrl: null,
       sellerCount: null,
       reason: "provider_search_disabled",
-      googleUrl: globalThis.DirobNormalize.buildGoogleSearchUrl(item.title),
-      searchUrl: globalThis.DirobNormalize.buildGoogleSearchUrl(item.title)
+      googleUrl: globalThis.RashnuNormalize.buildGoogleSearchUrl(item.title),
+      searchUrl: globalThis.RashnuNormalize.buildGoogleSearchUrl(item.title)
     };
   }
 
@@ -1384,7 +1398,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     const productId =
       String(item.sourceId || "").startsWith("digikala:")
         ? String(item.sourceId || "").slice("digikala:".length)
-        : globalThis.DirobNormalize.extractProductIdFromUrl(item.productUrl || "");
+        : globalThis.RashnuNormalize.extractProductIdFromUrl(item.productUrl || "");
     if (!productId || !/^\d+$/.test(productId)) {
       return baseItem;
     }
@@ -1406,8 +1420,8 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
   async function fetchTorobMatch(item, query) {
     const startedAt = Date.now();
     const searchPayload = await fetchJsonWithRetry(buildTorobApiSearchUrl(query));
-    const ranked = globalThis.DirobMatch.rankCandidates(item, searchPayload.results || []);
-    const classification = globalThis.DirobMatch.classifyTopCandidate(ranked);
+    const ranked = globalThis.RashnuMatch.rankCandidates(item, searchPayload.results || []);
+    const classification = globalThis.RashnuMatch.classifyTopCandidate(ranked);
     const top = ranked[0] || null;
     let detailed = null;
 
@@ -1430,7 +1444,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       targetPriceValue:
         detailed?.price ||
         top?.priceValue ||
-        globalThis.DirobNormalize.parsePriceValue(detailed?.price_text || ""),
+        globalThis.RashnuNormalize.parsePriceValue(detailed?.price_text || ""),
       targetOriginalPriceText: null,
       targetOriginalPriceValue: null,
       targetDiscountPercent: null,
@@ -1438,14 +1452,14 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
         top?.targetUrl ||
         (detailed?.web_client_absolute_url
           ? new URL(detailed.web_client_absolute_url, "https://torob.com").toString()
-          : globalThis.DirobNormalize.buildTorobSearchUrl(query)),
+          : globalThis.RashnuNormalize.buildTorobSearchUrl(query)),
       moreInfoUrl: top?.moreInfoUrl || null,
       sellerCount:
         top?.sellerCount ||
         parseSellerCount(detailed?.shop_text || detailed?.products_info?.title || ""),
       reason: classification.reason,
-      searchUrl: globalThis.DirobNormalize.buildTorobSearchUrl(query),
-      googleUrl: globalThis.DirobNormalize.buildGoogleSearchUrl(item.title),
+      searchUrl: globalThis.RashnuNormalize.buildTorobSearchUrl(query),
+      googleUrl: globalThis.RashnuNormalize.buildGoogleSearchUrl(item.title),
       debug: debugEnabled
         ? {
             requestDurationMs: Date.now() - startedAt,
@@ -1461,11 +1475,11 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     try {
       const searchPayload = await fetchJsonWithRetry(buildDigikalaApiSearchUrl(query));
       const products = searchPayload?.data?.products || [];
-      const ranked = globalThis.DirobMatch.rankCandidates(
+      const ranked = globalThis.RashnuMatch.rankCandidates(
         item,
         products.slice(0, 8).map(normalizeDigikalaCandidate)
       );
-      const classification = globalThis.DirobMatch.classifyTopCandidate(ranked);
+      const classification = globalThis.RashnuMatch.classifyTopCandidate(ranked);
       const top = ranked[0] || null;
 
       return {
@@ -1480,12 +1494,12 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
         targetOriginalPriceText: top?.originalPriceText || null,
         targetOriginalPriceValue: top?.originalPriceValue || null,
         targetDiscountPercent: top?.discountPercent || null,
-        targetUrl: top?.targetUrl || globalThis.DirobNormalize.buildDigikalaSearchUrl(query),
+        targetUrl: top?.targetUrl || globalThis.RashnuNormalize.buildDigikalaSearchUrl(query),
         moreInfoUrl: null,
         sellerCount: null,
         reason: classification.reason,
-        searchUrl: globalThis.DirobNormalize.buildDigikalaSearchUrl(query),
-        googleUrl: globalThis.DirobNormalize.buildGoogleSearchUrl(item.title),
+        searchUrl: globalThis.RashnuNormalize.buildDigikalaSearchUrl(query),
+        googleUrl: globalThis.RashnuNormalize.buildGoogleSearchUrl(item.title),
         debug: debugEnabled
           ? {
               requestDurationMs: Date.now() - startedAt,
@@ -1525,7 +1539,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       let htmlCandidates = [];
       if (!apiCandidates.length || !apiCandidates.some((candidate) => hasMeaningfulValue(candidate?.priceText || candidate?.price))) {
         try {
-          const html = await fetchTextWithRetry(globalThis.DirobNormalize.buildEmallsSearchUrl(query));
+          const html = await fetchTextWithRetry(globalThis.RashnuNormalize.buildEmallsSearchUrl(query));
           htmlCandidates = extractEmallsSearchCandidatesFromHtml(html);
         } catch (htmlError) {
           if (!isRecoverableProviderFetchError(htmlError)) {
@@ -1546,13 +1560,13 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
         return buildProviderSearchFallbackResult(item, query, "emalls", "no_results");
       }
 
-      const ranked = globalThis.DirobMatch.rankCandidates(item, mergedCandidates.slice(0, 18));
-      const classification = globalThis.DirobMatch.classifyTopCandidate(ranked);
+      const ranked = globalThis.RashnuMatch.rankCandidates(item, mergedCandidates.slice(0, 18));
+      const classification = globalThis.RashnuMatch.classifyTopCandidate(ranked);
       const top = ranked[0] || null;
       const topWithPrice = ranked.find((candidate) => hasMeaningfulValue(candidate?.priceText || candidate?.price)) || top;
       const targetPriceValue =
         topWithPrice?.price ??
-        globalThis.DirobNormalize.parsePriceValue(topWithPrice?.priceText || "");
+        globalThis.RashnuNormalize.parsePriceValue(topWithPrice?.priceText || "");
 
       return {
         sourceSite: item.sourceSite,
@@ -1566,12 +1580,12 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
         targetOriginalPriceText: null,
         targetOriginalPriceValue: null,
         targetDiscountPercent: null,
-        targetUrl: top?.targetUrl || topWithPrice?.targetUrl || globalThis.DirobNormalize.buildEmallsSearchUrl(query),
+        targetUrl: top?.targetUrl || topWithPrice?.targetUrl || globalThis.RashnuNormalize.buildEmallsSearchUrl(query),
         moreInfoUrl: null,
         sellerCount: null,
         reason: classification.reason,
-        searchUrl: globalThis.DirobNormalize.buildEmallsSearchUrl(query),
-        googleUrl: globalThis.DirobNormalize.buildGoogleSearchUrl(item.title),
+        searchUrl: globalThis.RashnuNormalize.buildEmallsSearchUrl(query),
+        googleUrl: globalThis.RashnuNormalize.buildGoogleSearchUrl(item.title),
         debug: debugEnabled
           ? {
               requestDurationMs: Date.now() - startedAt,
@@ -1601,7 +1615,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
   async function fetchAmazonMatch(item, query) {
     const startedAt = Date.now();
     const marketplaceQuery = await translateQueryForGlobalMarketplace(query, "amazon");
-    const searchUrl = globalThis.DirobNormalize.buildAmazonSearchUrl(marketplaceQuery);
+    const searchUrl = globalThis.RashnuNormalize.buildAmazonSearchUrl(marketplaceQuery);
     let directCandidates = [];
     let proxyCandidates = [];
     let blockedByAntibot = false;
@@ -1643,16 +1657,16 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
           blockedByAntibot ? "blocked_by_antibot" : "no_results"
         );
       }
-      const ranked = globalThis.DirobMatch.rankCandidates(
+      const ranked = globalThis.RashnuMatch.rankCandidates(
         item,
         mergedCandidates.slice(0, 12)
       );
-      const classification = globalThis.DirobMatch.classifyTopCandidate(ranked);
+      const classification = globalThis.RashnuMatch.classifyTopCandidate(ranked);
       const top = ranked[0] || null;
       const topWithPrice = ranked.find((candidate) => hasMeaningfulValue(candidate?.priceText || candidate?.price)) || top;
       const targetPriceValue =
         topWithPrice?.price ??
-        globalThis.DirobNormalize.parsePriceValue(topWithPrice?.priceText || "");
+        globalThis.RashnuNormalize.parsePriceValue(topWithPrice?.priceText || "");
 
       addLog("debug", "background", "marketplace_candidates_resolved", {
         sourceId: item.sourceId,
@@ -1681,7 +1695,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
         sellerCount: null,
         reason: classification.reason,
         searchUrl,
-        googleUrl: globalThis.DirobNormalize.buildGoogleSearchUrl(item.title),
+        googleUrl: globalThis.RashnuNormalize.buildGoogleSearchUrl(item.title),
         debug: debugEnabled
           ? {
             requestDurationMs: Date.now() - startedAt,
@@ -1713,7 +1727,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
   async function fetchEbayMatch(item, query) {
     const startedAt = Date.now();
     const marketplaceQuery = await translateQueryForGlobalMarketplace(query, "ebay");
-    const searchUrl = globalThis.DirobNormalize.buildEbaySearchUrl(marketplaceQuery);
+    const searchUrl = globalThis.RashnuNormalize.buildEbaySearchUrl(marketplaceQuery);
     let directCandidates = [];
     let proxyCandidates = [];
     let blockedByAntibot = false;
@@ -1757,13 +1771,13 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
         );
       }
 
-      const ranked = globalThis.DirobMatch.rankCandidates(item, mergedCandidates.slice(0, 12));
-      const classification = globalThis.DirobMatch.classifyTopCandidate(ranked);
+      const ranked = globalThis.RashnuMatch.rankCandidates(item, mergedCandidates.slice(0, 12));
+      const classification = globalThis.RashnuMatch.classifyTopCandidate(ranked);
       const top = ranked[0] || null;
       const topWithPrice = ranked.find((candidate) => hasMeaningfulValue(candidate?.priceText || candidate?.price)) || top;
       const targetPriceValue =
         topWithPrice?.price ??
-        globalThis.DirobNormalize.parsePriceValue(topWithPrice?.priceText || "");
+        globalThis.RashnuNormalize.parsePriceValue(topWithPrice?.priceText || "");
 
       addLog("debug", "background", "marketplace_candidates_resolved", {
         sourceId: item.sourceId,
@@ -1792,7 +1806,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
         sellerCount: null,
         reason: classification.reason,
         searchUrl,
-        googleUrl: globalThis.DirobNormalize.buildGoogleSearchUrl(item.title),
+        googleUrl: globalThis.RashnuNormalize.buildGoogleSearchUrl(item.title),
         debug: debugEnabled
           ? {
             requestDurationMs: Date.now() - startedAt,
@@ -1898,11 +1912,11 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       searchPayload = await fetchJsonWithRetry(buildTechnolifeApiSearchUrl(buildId, query));
     }
     const results = extractTechnolifeSearchResults(searchPayload);
-    const ranked = globalThis.DirobMatch.rankCandidates(
+    const ranked = globalThis.RashnuMatch.rankCandidates(
       item,
       results.slice(0, 12).map(normalizeTechnolifeCandidate)
     );
-    const classification = globalThis.DirobMatch.classifyTopCandidate(ranked);
+    const classification = globalThis.RashnuMatch.classifyTopCandidate(ranked);
     const top = ranked[0] || null;
 
     return {
@@ -1917,12 +1931,12 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       targetOriginalPriceText: null,
       targetOriginalPriceValue: null,
       targetDiscountPercent: null,
-      targetUrl: top?.targetUrl || globalThis.DirobNormalize.buildTechnolifeSearchUrl(query),
+      targetUrl: top?.targetUrl || globalThis.RashnuNormalize.buildTechnolifeSearchUrl(query),
       moreInfoUrl: null,
       sellerCount: null,
       reason: classification.reason,
-      searchUrl: globalThis.DirobNormalize.buildTechnolifeSearchUrl(query),
-      googleUrl: globalThis.DirobNormalize.buildGoogleSearchUrl(item.title),
+      searchUrl: globalThis.RashnuNormalize.buildTechnolifeSearchUrl(query),
+      googleUrl: globalThis.RashnuNormalize.buildGoogleSearchUrl(item.title),
       debug: debugEnabled
         ? {
             requestDurationMs: Date.now() - startedAt,
@@ -1958,15 +1972,15 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
   }
 
   function normalizeTechnolifeCandidate(product) {
-    const title = globalThis.DirobNormalize.cleanProductTitle(product?.name || "");
+    const title = globalThis.RashnuNormalize.cleanProductTitle(product?.name || "");
     const code = String(product?.code || "");
     const productIdMatch = code.match(/^TLP-(\d+)$/i);
     const productId = productIdMatch ? productIdMatch[1] : null;
     const rawPrice = product?.discounted_price || product?.normal_price || null;
-    const priceValue = globalThis.DirobNormalize.normalizePriceUnit(rawPrice, "toman");
+    const priceValue = globalThis.RashnuNormalize.normalizePriceUnit(rawPrice, "toman");
     const targetUrl = productId
       ? `https://www.technolife.com/product-${productId}`
-      : globalThis.DirobNormalize.buildTechnolifeSearchUrl(title || code);
+      : globalThis.RashnuNormalize.buildTechnolifeSearchUrl(title || code);
 
     return {
       title,
@@ -1981,16 +1995,16 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
 
   function normalizeEmallsCandidate(item) {
     const rawTitle = String(item?.title || "").replace(/<[^>]*>/g, " ");
-    const title = globalThis.DirobNormalize
+    const title = globalThis.RashnuNormalize
       .cleanProductTitle(rawTitle)
       .replace(/\s+در\s+دسته\s+.*$/u, "")
       .trim();
     const rawPrice = item?.price || item?.priceText || item?.pprice || null;
     const normalizedPriceText = sanitizeHtmlText(rawPrice || "");
-    const priceValue = globalThis.DirobNormalize.parsePriceValue(normalizedPriceText || "");
+    const priceValue = globalThis.RashnuNormalize.parsePriceValue(normalizedPriceText || "");
     const targetUrl =
-      globalThis.DirobNormalize.canonicalizeUrl(item?.link || "", "https://emalls.ir") ||
-      globalThis.DirobNormalize.buildEmallsSearchUrl(title || rawTitle);
+      globalThis.RashnuNormalize.canonicalizeUrl(item?.link || "", "https://emalls.ir") ||
+      globalThis.RashnuNormalize.buildEmallsSearchUrl(title || rawTitle);
 
     return {
       title,
@@ -2046,11 +2060,11 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
 
     while ((linkMatch = linkRegex.exec(text)) && candidates.length < 40) {
       const rawUrl = decodeHtmlEntities(linkMatch[1] || "");
-      const targetUrl = globalThis.DirobNormalize.canonicalizeUrl(rawUrl, "https://emalls.ir");
+      const targetUrl = globalThis.RashnuNormalize.canonicalizeUrl(rawUrl, "https://emalls.ir");
       if (!targetUrl) {
         continue;
       }
-      const title = globalThis.DirobNormalize.cleanProductTitle(sanitizeHtmlText(linkMatch[2] || ""));
+      const title = globalThis.RashnuNormalize.cleanProductTitle(sanitizeHtmlText(linkMatch[2] || ""));
       if (!title) {
         continue;
       }
@@ -2066,7 +2080,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
         context.match(/<div[^>]*class=["'][^"']*prd-price[^"']*["'][^>]*>\s*(?:<span[^>]*>)?\s*([^<]+?)(?:<\/span>|<\/div>)/i) ||
         context.match(/class=["'][^"']*item-price[^"']*["'][^>]*>\s*([^<]{2,80})/i);
       const rawPriceText = sanitizeHtmlText(priceMatch?.[1] || "");
-      const priceValue = globalThis.DirobNormalize.parsePriceValue(rawPriceText || "");
+      const priceValue = globalThis.RashnuNormalize.parsePriceValue(rawPriceText || "");
       const priceText = rawPriceText || (priceValue ? formatPrice(priceValue) : null);
 
       candidates.push({
@@ -2130,7 +2144,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
         continue;
       }
       const targetUrl =
-        globalThis.DirobNormalize.canonicalizeUrl(href, "https://www.amazon.com") ||
+        globalThis.RashnuNormalize.canonicalizeUrl(href, "https://www.amazon.com") ||
         `https://www.amazon.com${href.startsWith("/") ? href : `/${href}`}`;
       const title = sanitizeHtmlText(match[2]);
       if (!title) {
@@ -2142,7 +2156,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       candidates.push({
         title,
         priceText: rawPrice || null,
-        price: globalThis.DirobNormalize.parsePriceValue(rawPrice || ""),
+        price: globalThis.RashnuNormalize.parsePriceValue(rawPrice || ""),
         targetSite: "amazon",
         targetUrl,
         site: "amazon"
@@ -2169,12 +2183,12 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
         continue;
       }
       const targetUrl =
-        globalThis.DirobNormalize.canonicalizeUrl(linkMatch[1], "https://www.ebay.com") || linkMatch[1];
+        globalThis.RashnuNormalize.canonicalizeUrl(linkMatch[1], "https://www.ebay.com") || linkMatch[1];
       const rawPrice = priceMatch ? sanitizeHtmlText(priceMatch[1]) : "";
       candidates.push({
         title,
         priceText: rawPrice || null,
-        price: globalThis.DirobNormalize.parsePriceValue(rawPrice || ""),
+        price: globalThis.RashnuNormalize.parsePriceValue(rawPrice || ""),
         targetSite: "ebay",
         targetUrl,
         site: "ebay"
@@ -2218,7 +2232,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     while ((titleMatch = titleRegex.exec(text)) && candidatesByKey.size < 32) {
       const rawTitle = sanitizeMarkdownText(titleMatch[1]);
       const rawUrl = titleMatch[2] || "";
-      const targetUrl = globalThis.DirobNormalize.canonicalizeUrl(rawUrl, "https://www.amazon.com");
+      const targetUrl = globalThis.RashnuNormalize.canonicalizeUrl(rawUrl, "https://www.amazon.com");
       const resultKey = extractAmazonResultKey(targetUrl);
       if (!rawTitle || !targetUrl || !resultKey) {
         continue;
@@ -2237,7 +2251,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     let priceMatch;
     while ((priceMatch = priceRegex.exec(text))) {
       const priceText = extractUsdPriceText(priceMatch[1]);
-      const targetUrl = globalThis.DirobNormalize.canonicalizeUrl(priceMatch[2] || "", "https://www.amazon.com");
+      const targetUrl = globalThis.RashnuNormalize.canonicalizeUrl(priceMatch[2] || "", "https://www.amazon.com");
       const resultKey = extractAmazonResultKey(targetUrl);
       if (!priceText || !resultKey) {
         continue;
@@ -2245,7 +2259,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       const candidate = candidatesByKey.get(resultKey);
       if (candidate) {
         candidate.priceText = priceText;
-        candidate.price = globalThis.DirobNormalize.parsePriceValue(priceText || "");
+        candidate.price = globalThis.RashnuNormalize.parsePriceValue(priceText || "");
       }
     }
 
@@ -2261,7 +2275,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     let match;
     while ((match = itemRegex.exec(text)) && candidatesByKey.size < 32) {
       const rawTitle = sanitizeMarkdownText(match[1]);
-      const targetUrl = globalThis.DirobNormalize.canonicalizeUrl(match[2] || "", "https://www.ebay.com");
+      const targetUrl = globalThis.RashnuNormalize.canonicalizeUrl(match[2] || "", "https://www.ebay.com");
       const resultKey = extractEbayResultKey(targetUrl);
       const priceText = extractUsdPriceText(match[4]);
       if (!rawTitle || !targetUrl || !resultKey || !priceText) {
@@ -2273,7 +2287,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       candidatesByKey.set(resultKey, {
         title: rawTitle.replace(/^New Listing\s+/i, "").trim(),
         priceText,
-        price: globalThis.DirobNormalize.parsePriceValue(priceText || ""),
+        price: globalThis.RashnuNormalize.parsePriceValue(priceText || ""),
         targetSite: "ebay",
         targetUrl,
         site: "ebay"
@@ -2378,7 +2392,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       targetSite: "digikala",
       targetUrl: product?.id
         ? `https://www.digikala.com/product/dkp-${product.id}/`
-        : globalThis.DirobNormalize.buildDigikalaSearchUrl(title),
+        : globalThis.RashnuNormalize.buildDigikalaSearchUrl(title),
       productUrl: product?.id
         ? `https://www.digikala.com/product/dkp-${product.id}/`
         : null,
@@ -2388,7 +2402,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
 
   function normalizeDigikalaSourceProduct(product, originalItem) {
     const candidate = normalizeDigikalaCandidate(product);
-    const title = globalThis.DirobNormalize.cleanProductTitle(candidate.title || originalItem.title || "");
+    const title = globalThis.RashnuNormalize.cleanProductTitle(candidate.title || originalItem.title || "");
     return {
       ...originalItem,
       title: title || originalItem.title || "",
@@ -2408,8 +2422,8 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
   }
 
   function buildCleanMatchQuery(item) {
-    const cleanedTitle = globalThis.DirobNormalize.cleanProductTitle(item?.title || "");
-    const cleaned = globalThis.DirobNormalize.buildSearchQuery(cleanedTitle) || cleanedTitle || item?.title || "";
+    const cleanedTitle = globalThis.RashnuNormalize.cleanProductTitle(item?.title || "");
+    const cleaned = globalThis.RashnuNormalize.buildSearchQuery(cleanedTitle) || cleanedTitle || item?.title || "";
     return cleaned || item?.title || "";
   }
 
@@ -2417,7 +2431,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     const next = {
       ...item
     };
-    next.title = globalThis.DirobNormalize.cleanProductTitle(next.title || "");
+    next.title = globalThis.RashnuNormalize.cleanProductTitle(next.title || "");
 
     if (!hasMeaningfulValue(next.displayPriceText) && hasMeaningfulValue(next.sourcePriceText)) {
       next.displayPriceText = next.sourcePriceText;
@@ -2512,19 +2526,19 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
   }
 
   function formatPrice(value) {
-    return globalThis.DirobNormalize.formatToman(value);
+    return globalThis.RashnuNormalize.formatToman(value);
   }
 
   function normalizeDigikalaApiPrice(value) {
-    return globalThis.DirobNormalize.normalizePriceUnit(value, "IRR");
+    return globalThis.RashnuNormalize.normalizePriceUnit(value, "IRR");
   }
 
   function normalizeDiscountPercent(value) {
-    const parsed = globalThis.DirobNormalize.parseDiscountPercent(value);
+    const parsed = globalThis.RashnuNormalize.parseDiscountPercent(value);
     if (!Number.isFinite(parsed)) {
       return null;
     }
-    return globalThis.DirobNormalize.formatDiscountPercent(parsed);
+    return globalThis.RashnuNormalize.formatDiscountPercent(parsed);
   }
 
   function normalizeGuideNumber(value) {
@@ -2623,7 +2637,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
   }
 
   function parseSellerCount(value) {
-    const parsed = globalThis.DirobNormalize.parsePriceValue(value);
+    const parsed = globalThis.RashnuNormalize.parsePriceValue(value);
     return parsed == null ? null : parsed;
   }
 
@@ -2667,21 +2681,21 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
 
   function buildSearchUrlForSite(site, query) {
     if (site === "digikala") {
-      return globalThis.DirobNormalize.buildDigikalaSearchUrl(query);
+      return globalThis.RashnuNormalize.buildDigikalaSearchUrl(query);
     }
     if (site === "technolife") {
-      return globalThis.DirobNormalize.buildTechnolifeSearchUrl(query);
+      return globalThis.RashnuNormalize.buildTechnolifeSearchUrl(query);
     }
     if (site === "emalls") {
-      return globalThis.DirobNormalize.buildEmallsSearchUrl(query);
+      return globalThis.RashnuNormalize.buildEmallsSearchUrl(query);
     }
     if (site === "amazon") {
-      return globalThis.DirobNormalize.buildAmazonSearchUrl(query);
+      return globalThis.RashnuNormalize.buildAmazonSearchUrl(query);
     }
     if (site === "ebay") {
-      return globalThis.DirobNormalize.buildEbaySearchUrl(query);
+      return globalThis.RashnuNormalize.buildEbaySearchUrl(query);
     }
-    return globalThis.DirobNormalize.buildTorobSearchUrl(query);
+    return globalThis.RashnuNormalize.buildTorobSearchUrl(query);
   }
 
   function buildTorobApiSearchUrl(query) {
@@ -2850,7 +2864,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
   }
 
   function buildMarketplaceFallbackEnglishQuery(sourceQuery) {
-    let normalized = globalThis.DirobNormalize.normalizeDigits(sourceQuery || "");
+    let normalized = globalThis.RashnuNormalize.normalizeDigits(sourceQuery || "");
     normalized = String(normalized)
       .toLowerCase()
       .replace(/[\u200c\u200f]/gu, " ")
@@ -2890,7 +2904,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       moreInfoUrl: null,
       sellerCount: null,
       reason,
-      googleUrl: globalThis.DirobNormalize.buildGoogleSearchUrl(item.title),
+      googleUrl: globalThis.RashnuNormalize.buildGoogleSearchUrl(item.title),
       searchUrl
     };
   }
@@ -3260,7 +3274,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     row.retryCountMatch = 0;
     row.retryCountSource = 0;
     state.sourceCache.delete(sourceId);
-    const normalizedQuery = globalThis.DirobNormalize.normalizeText(buildCleanMatchQuery(row.item));
+    const normalizedQuery = globalThis.RashnuNormalize.normalizeText(buildCleanMatchQuery(row.item));
     const queryPrefix = `${row.item.sourceSite}:`;
     for (const key of state.matchCache.keys()) {
       if (!String(key).startsWith(queryPrefix) || !String(key).endsWith(`:${normalizedQuery}`)) {
@@ -3301,7 +3315,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
   async function softRescanTab(tabId) {
     try {
       await chrome.tabs.sendMessage(tabId, {
-        type: "DIROB_SOFT_RESCAN"
+        type: "RASHNU_SOFT_RESCAN"
       });
       addLog("info", "background", "soft_rescan", {
         tabId
@@ -3319,7 +3333,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     resetPageState(state);
     try {
       await chrome.tabs.sendMessage(tabId, {
-        type: "DIROB_FORCE_RESCAN"
+        type: "RASHNU_FORCE_RESCAN"
       });
       addLog("info", "background", "force_rescan", {
         tabId
@@ -3340,7 +3354,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
 
     try {
       await chrome.tabs.sendMessage(activeTab.id, {
-        type: "DIROB_SCROLL_TO_ITEM",
+        type: "RASHNU_SCROLL_TO_ITEM",
         payload: { sourceId }
       });
       addLog("info", "background", "locate_item", {
@@ -3376,7 +3390,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     const dataUrl =
       "data:application/json;charset=utf-8," +
       encodeURIComponent(JSON.stringify(payload, null, 2));
-    const filename = `dirob-logs-${Date.now()}.json`;
+    const filename = `rashnu-logs-${Date.now()}.json`;
     const downloadId = await chrome.downloads.download({
       url: dataUrl,
       filename,
@@ -3422,8 +3436,9 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     }
     panelActive = next;
     await chrome.storage.local.set({
-      dirobPanelActive: panelActive
+      rashnuPanelActive: panelActive
     });
+    await syncActionIcon();
     addLog("info", "background", "panel_active_changed", {
       panelActive
     });
@@ -3436,9 +3451,17 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     notifyPanels();
   }
 
+  async function syncActionIcon() {
+    if (!chrome.action?.setIcon) {
+      return;
+    }
+    const path = panelActive ? ACTION_ICON_PATHS.active : ACTION_ICON_PATHS.inactive;
+    await chrome.action.setIcon({ path }).catch(() => {});
+  }
+
   function notifyPanels() {
     chrome.runtime.sendMessage({
-      type: "DIROB_PANEL_STATE_UPDATED"
+      type: "RASHNU_PANEL_STATE_UPDATED"
     }).catch(() => {});
     scheduleStateFlush();
   }
@@ -3474,9 +3497,9 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
         connected: true,
         lastCheckedAt: new Date().toISOString(),
         lastError: null,
-        artifactDir: payload.artifact_dir || "research/artifacts/dirob",
-        logPath: payload.log_path || "research/artifacts/dirob/dirob-live-log.ndjson",
-        statePath: payload.state_path || "research/artifacts/dirob/dirob-state.json"
+        artifactDir: payload.artifact_dir || "research/artifacts/rashnu",
+        logPath: payload.log_path || "research/artifacts/rashnu/rashnu-live-log.ndjson",
+        statePath: payload.state_path || "research/artifacts/rashnu/rashnu-state.json"
       };
       return true;
     } catch (error) {

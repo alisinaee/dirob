@@ -1,6 +1,6 @@
-# Dirob
+# Rashnu
 
-Dirob is a Chrome side-panel extension for comparing prices across shopping providers while browsing supported listing and product pages.
+Rashnu is a Chrome side-panel extension for comparing prices across shopping providers while browsing supported listing and product pages.
 
 ## Features
 
@@ -11,7 +11,7 @@ Dirob is a Chrome side-panel extension for comparing prices across shopping prov
 - Sync-with-view mode
 - List and grid layouts
 - Minimal compact view
-- Local development logs via `run-dirob-helper`
+- Local development logs via `run-rashnu-helper`
 
 ## Install In Chrome (Unofficial / Unpacked)
 
@@ -21,10 +21,10 @@ Use this when the extension is not from Chrome Web Store.
 2. Turn on `Developer mode` (top-right).
 3. Click `Load unpacked`.
 4. Select this repository folder (must contain `manifest.json`).
-5. Find **Dirob** in extension cards.
-6. (Optional) Click the pin icon in Chrome toolbar so Dirob is always visible.
-7. Open a Digikala, Torob, Technolife, Emalls, Amazon, or eBay page, then open Dirob from Chrome side panel.
-8. After any local code change, go back to `chrome://extensions` and click `Reload` on the Dirob card.
+5. Find **Rashnu** in extension cards.
+6. (Optional) Click the pin icon in Chrome toolbar so Rashnu is always visible.
+7. Open a Digikala, Torob, Technolife, Emalls, Amazon, or eBay page, then open Rashnu from Chrome side panel.
+8. After any local code change, go back to `chrome://extensions` and click `Reload` on the Rashnu card.
 
 ## Development
 
@@ -33,22 +33,22 @@ Use this when the extension is not from Chrome Web Store.
 One-time auto-start setup:
 
 ```bash
-./run-dirob-helper --install-autostart
+./run-rashnu-helper --install-autostart
 ```
 
 Check status:
 
 ```bash
-./run-dirob-helper --status
+./run-rashnu-helper --status
 ```
 
 Foreground/manual mode:
 
 ```bash
-./run-dirob-helper
+./run-rashnu-helper
 ```
 
-After setup, open Digikala, Torob, Technolife, Emalls, Amazon, or eBay pages and use the Dirob side panel.
+After setup, open Digikala, Torob, Technolife, Emalls, Amazon, or eBay pages and use the Rashnu side panel.
 
 ## License
 

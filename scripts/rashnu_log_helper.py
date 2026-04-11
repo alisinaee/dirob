@@ -8,9 +8,9 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
-ARTIFACT_DIR = ROOT / "research" / "artifacts" / "dirob"
-LOG_PATH = ARTIFACT_DIR / "dirob-live-log.ndjson"
-STATE_PATH = ARTIFACT_DIR / "dirob-state.json"
+ARTIFACT_DIR = ROOT / "research" / "artifacts" / "rashnu"
+LOG_PATH = ARTIFACT_DIR / "rashnu-live-log.ndjson"
+STATE_PATH = ARTIFACT_DIR / "rashnu-state.json"
 HOST = "127.0.0.1"
 PORT = 45173
 
@@ -38,7 +38,7 @@ def write_state(payload: dict[str, Any]) -> None:
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "DirobLogHelper/1.0"
+    server_version = "RashnuLogHelper/1.0"
 
     def log_message(self, _format: str, *_args: Any) -> None:
         return
@@ -107,7 +107,7 @@ class Handler(BaseHTTPRequestHandler):
 def main() -> int:
     ensure_paths()
     server = ThreadingHTTPServer((HOST, PORT), Handler)
-    print(f"Dirob log helper listening on http://{HOST}:{PORT}")
+    print(f"Rashnu log helper listening on http://{HOST}:{PORT}")
     print(f"Log file: {LOG_PATH}")
     print(f"State file: {STATE_PATH}")
     try:

@@ -445,7 +445,7 @@
     return String(value || "").trim();
   }
 
-  globalThis.DirobNormalize = {
+  globalThis.RashnuNormalize = {
     GENERIC_STOPWORDS,
     normalizeDigits,
     normalizeText,
