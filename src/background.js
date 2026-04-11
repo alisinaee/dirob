@@ -63,6 +63,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
   const AMAZON_API_CREDENTIALS_KEY = "rashnuAmazonApiCredentials";
   const EBAY_API_CREDENTIALS_KEY = "rashnuEbayApiCredentials";
   const inFlightQueries = new Map();
+  const queuedQueries = new Map();
   const inFlightSourceResolvers = new Map();
   const queryTranslationCache = new Map();
   const inFlightQueryTranslations = new Map();
@@ -1127,7 +1128,13 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       return;
     }
 
-    queue.push({
+    const queued = queuedQueries.get(queryKey);
+    if (queued) {
+      queued.listeners.push({ tabId, sourceId: item.sourceId, item });
+      return;
+    }
+
+    const job = {
       tabId,
       item,
       query,
@@ -1135,8 +1142,11 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       targetSite,
       fallbackSites,
       isManual,
-      pageKey: state.pageKey
-    });
+      pageKey: state.pageKey,
+      listeners: [{ tabId, sourceId: item.sourceId, item }]
+    };
+    queue.push(job);
+    queuedQueries.set(queryKey, job);
     addLog("debug", "background", "queue_match", {
       tabId,
       sourceId: item.sourceId,
@@ -1149,6 +1159,9 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
   function drainQueue() {
     while (activeCount < MAX_CONCURRENCY && queue.length) {
       const job = queue.shift();
+      if (job?.queryKey) {
+        queuedQueries.delete(job.queryKey);
+      }
       activeCount += 1;
       runQuery(job)
         .catch(() => {})
@@ -1160,7 +1173,10 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
   }
 
   async function runQuery(job) {
-    const listeners = [{ tabId: job.tabId, sourceId: job.item.sourceId, item: job.item }];
+    const listeners =
+      Array.isArray(job?.listeners) && job.listeners.length
+        ? [...job.listeners]
+        : [{ tabId: job.tabId, sourceId: job.item.sourceId, item: job.item }];
     inFlightQueries.set(job.queryKey, { listeners });
     let result;
     const state = ensureTabState(job.tabId);
