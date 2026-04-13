@@ -20,9 +20,56 @@
 - Ensure top reload should work without refreshing the page.
 - Ensure changing lang should not require refreshing.
 - Ensure in RTL the per-item corner tools (reload/find) should be on the left side to avoid overlap with title/status content.
-- Prefer a dedicated extension tab for table-heavy global search workflows instead of forcing them into the side panel.
 
 ## Recent Changes (Last 20)
+### 2026-04-12T22:19:48+03:30
+- Changed files: `src/panel/panel.js`, `src/background.js`, `src/search/search.js`, `src/help/help.html`, `src/help/help.js`
+- Summary: Added a per-item Rashnu Search action in the panel that opens global search prefilled and autorun for the clicked item title, and refreshed the help guide to cover global-search filters, duplicate grouping, thumbnails, and the new item action.
+- Behavior impact: Recorded code-level deltas for future AI context.
+<!-- fingerprint:103fae984a7b -->
+
+### 2026-04-12T21:54:58+03:30
+- Changed files: `src/search/search.html`, `src/search/search.css`, `src/search/search.js`, `src/background.js`, `src/lib/match.js`
+- Summary: Refined global search layout, moved providers into top settings, matched panel-style icon controls, split include/exclude suggestions visually, preserved candidate thumbnails, and close the Rashnu side panel when opening global search with sidePanel.close fallback.
+- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
+<!-- fingerprint:3583e013eb8c -->
+
+### 2026-04-12T21:39:31+03:30
+- Changed files: `src/background.js`
+- Summary: Expanded global-search include/exclude suggestion generation to use larger suggestion samples, stronger term-difference scoring between stronger and weaker result bands, and better formatting/classification for spec/model tokens like capacities and product codes.
+- Behavior impact: Recorded code-level deltas for future AI context.
+<!-- fingerprint:8be22aabaeba -->
+
+### 2026-04-12T21:09:58+03:30
+- Changed files: `src/search/search.html`, `src/search/search.js`, `src/search/search.css`
+- Summary: Added a Clear All Filters action to global search that resets include terms, exclude terms, and condition back to default without changing the base query or selected providers.
+- Behavior impact: Recorded code-level deltas for future AI context.
+<!-- fingerprint:2ba56580a4be -->
+
+### 2026-04-12T21:08:35+03:30
+- Changed files: `src/search/search.html`, `src/search/search.js`, `src/search/search.css`, `src/panel/panel.js`, `src/background.js`
+- Summary: Refined global search UI with collapsible Rashnu settings and provider sections, conditional Amazon/eBay warning inside providers, theme/language controls, search-result thumbnails, and search-tab side-panel disabling so the Rashnu side panel closes on the global-search tab.
+- Behavior impact: Recorded code-level deltas for future AI context.
+<!-- fingerprint:1ffd42efc183 -->
+
+### 2026-04-12T19:55:32+03:30
+- Changed files: `src/search/search.html`, `src/search/search.js`, `src/search/search.css`, `src/background.js`
+- Summary: Expanded global search with include and exclude chips, condition filters, query preview, duplicate grouping, background post-filter and dedupe logic, smart suggestions, and safe rerun handling during in-flight searches.
+- Behavior impact: Recorded code-level deltas for future AI context.
+<!-- fingerprint:2ac1f5216b88 -->
+
+### 2026-04-12T19:50:58+03:30
+- Changed files: `src/search/search.html`, `src/search/search.js`, `src/search/search.css`, `src/background.js`
+- Summary: Expanded global search with include/exclude chips, condition filters, query preview, duplicate grouping toggle, background post-filter/dedupe controls, and result-driven refinement suggestions.
+- Behavior impact: Recorded code-level deltas for future AI context.
+<!-- fingerprint:bd1e087a1123 -->
+
+### 2026-04-12T17:33:20+03:30
+- Changed files: `src/content.js`, `src/lib/extract-listing-cards.js`, `src/background.js`, `scripts/test_page_context_smoke.js`, `docs/manual-regression-checklist.md`
+- Summary: Optimized content page-context detection with cached listing checks, limited URL polling to panel-active fallback windows, batched debug log persistence to chrome.storage, and added smoke/manual regression verification artifacts.
+- Behavior impact: Recorded code-level deltas for future AI context.
+<!-- fingerprint:623e58b999de -->
+
 ### 2026-04-11T22:20:00+03:30
 - Changed files: `src/search/search.html`, `src/search/search.js`, `src/search/search.css`
 - Summary: Split the global-search settings into a compact sticky strip below the header, added measured sticky offsets so the search bar docks beneath that strip after search, and turned the empty state into a centered hero search layout instead of a full stacked settings card.
@@ -95,65 +142,5 @@
 - Behavior impact: Recorded code-level deltas for future AI context.
 <!-- fingerprint:b84dc5c35bc4 -->
 
-### 2026-04-10T20:55:12+03:30
-- Changed files: `src/panel/panel.js`, `src/background.js`
-- Summary: Fixed English digit localization so Persian/Arabic numerals convert to real decimal digits (instead of ASCII code values), which corrected malformed Torob/Technolife price text in EN mode. Added Digikala match fallback on recoverable transport errors (`network_error`, `timeout`, retryable HTTP), returning a stable search-only result instead of hard error status.
-- Behavior impact: Recorded code-level deltas for future AI context.
-<!-- fingerprint:f7e0cc4d4e43 -->
-
-### 2026-04-10T20:36:37+03:30
-- Changed files: `src/background.js`, `src/lib/normalize.js`, `src/panel/panel.html`, `src/panel/panel.js`, `src/help/help.js`, `manifest.json`, `README.md`, `assets/site-icons/emalls.svg`, `assets/site-icons/amazon.svg`, `assets/site-icons/ebay.svg`
-- Summary: Expanded provider registry from 3 to 6 providers and added `emalls`, `amazon`, and `ebay` as target providers. Implemented Emalls API search via `/_Search.ashx` and credential-aware Amazon/eBay placeholders that safely return fallback `searchUrl` results with explicit reasons when credentials are missing.
-- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
-<!-- fingerprint:6f8c19a2db91 -->
-
-### 2026-04-10T12:03:02+03:30
-- Changed files: `src/panel/panel.js`, `src/panel/panel.css`
-- Summary: Removed top per-item status/confidence labels from cards and moved confidence display to per-provider badges inside price boxes, so confidence is shown provider-by-provider alongside provider icons.
-- Behavior impact: Recorded code-level deltas for future AI context.
-<!-- fingerprint:f30500fc7d35 -->
-
-### 2026-04-10T11:56:49+03:30
-- Changed files: `src/background.js`, `src/panel/panel.js`, `src/panel/panel.html`, `src/panel/panel.css`
-- Summary: Changed matching/panel from single-target view to multi-provider display per item: fetch all enabled target providers, store per-site results, and render a price section for each active provider (source + enabled targets).
-- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
-<!-- fingerprint:ed485b497fe2 -->
-
-### 2026-04-10T11:51:21+03:30
-- Changed files: `src/background.js`, `src/panel/panel.js`, `src/panel/panel.html`, `src/panel/panel.css`, `manifest.json`, `src/lib/normalize.js`, `src/lib/extract-listing-cards.js`, `assets/site-icons/technolife-192.png`
-- Summary: Kept Digikala and enabled all 3 providers (Torob, Digikala, Technolife) with per-provider settings for search-button availability and price visibility; matching now uses enabled provider order/fallbacks, and panel settings include provider toggles.
-- Behavior impact: Recorded code-level deltas for future AI context.
-<!-- fingerprint:a31bb44b5d35 -->
-
-### 2026-04-10T11:41:33+03:30
-- Changed files: `manifest.json`, `src/lib/normalize.js`, `src/lib/extract-listing-cards.js`, `src/panel/panel.js`, `assets/site-icons/technolife-192.png`
-- Summary: Enabled Technolife as a full source site: content script host match, technolife source IDs, listing/detail extraction via DOM + __NEXT_DATA__, upgraded technolife icon asset, and panel unsupported text updated.
-- Behavior impact: Recorded code-level deltas for future AI context.
-<!-- fingerprint:e33854a08c5c -->
-
-### 2026-04-10T11:21:02+03:30
-- Changed files: `manifest.json`, `src/background.js`, `src/lib/normalize.js`, `src/panel/panel.js`
-- Summary: Added Technolife API-backed provider fallback via Next.js data endpoint, with manifest permissions, panel label/icon/search support, and normalization helpers.
-- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
-<!-- fingerprint:46b2841747e6 -->
-
-### 2026-04-09T13:01:28+03:30
-- Changed files: `src/panel/panel.css`
-- Summary: Switched per-item corner tool anchoring to logical inline-end so in RTL they render on the left side, avoiding overlap on the right.
-- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
-<!-- fingerprint:4f83f1713ad7 -->
-
-### 2026-04-09T12:59:18+03:30
-- Changed files: `src/panel/panel.css`
-- Summary: Fixed switch control geometry by forcing toggle track layout to LTR with explicit start alignment and clipping, preventing RTL overflow/misaligned thumbs.
-- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
-<!-- fingerprint:5533c1d56a59 -->
-
-### 2026-04-09T12:38:27+03:30
-- Changed files: `assets/fonts/Vazir-Regular-FD.woff2`, `assets/fonts/Vazir-Bold-FD.woff2`, `src/panel/panel.css`, `src/help/help.css`, `src/sidebar.css`, `src/popup/popup.html`
-- Summary: Bundled Vazir font files into the extension and added local `@font-face` declarations for panel/help/sidebar/popup so Persian text consistently renders in Vazir regardless of OS-installed fonts.
-- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
-<!-- fingerprint:72ca5b4f58c4 -->
-
 ## Last Updated
-- 2026-04-11T22:20:00+03:30
+- 2026-04-12T22:19:48+03:30

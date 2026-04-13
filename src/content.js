@@ -11,6 +11,8 @@
   const mutationObserver = new MutationObserver(handleDomMutation);
   const RASHNU_MUTATION_IGNORE_SELECTOR =
     '[data-rashnu-guide-badge], [data-rashnu-highlight], [data-rashnu-transient-highlight], #rashnu-selection-style, #rashnu-guide-style, [data-rashnu-role]';
+  const LOCATION_POLL_INTERVAL_MS = 800;
+  const LOCATION_POLL_FALLBACK_WINDOW_MS = 10000;
   let observedElements = new WeakSet();
   let sourceIdToRecord = new Map();
   let rowState = new Map();
@@ -42,6 +44,8 @@
   let navigationRescanNonce = 0;
   let navigationEpoch = 0;
   let listingNavigationResetUntil = 0;
+  let locationPollFallbackTimer = null;
+  let locationChangeHandler = null;
 
   boot().catch(() => {});
 
@@ -53,9 +57,9 @@
   async function startWhenReady() {
     bootAttempts += 1;
     ensureNavigationListeners();
-    pageContext = extractor.getPageContext();
+    pageContext = getCurrentPageContext({ forceRefresh: true });
     await syncSettings();
-    await notifyPageState();
+    await notifyPageState(pageContext);
 
     if (!pageContext.isSupported) {
       if (bootAttempts < 12) {
@@ -109,66 +113,73 @@
     }
     if (panelActive) {
       renderGuideBadges();
+      scheduleLocationPollingFallback("sync_settings");
     } else {
       clearGuideBadges();
       focusedSourceId = null;
+      stopLocationPollingFallback();
     }
   }
 
-  async function notifyPageState() {
-    pageContext = extractor.getPageContext();
-    resetLocalStateIfNeeded(pageContext);
+  function getCurrentPageContext(options = {}) {
+    pageContext = extractor.getPageContext(options);
+    return pageContext;
+  }
+
+  async function notifyPageState(context = null) {
+    const nextContext = context || getCurrentPageContext();
+    resetLocalStateIfNeeded(nextContext);
     const signature = JSON.stringify({
       pageKey: currentPageKey,
-      pageUrl: pageContext.pageUrl,
-      site: pageContext.site,
-      mode: pageContext.mode,
-      isSupported: pageContext.isSupported
+      pageUrl: nextContext.pageUrl,
+      site: nextContext.site,
+      mode: nextContext.mode,
+      isSupported: nextContext.isSupported
     });
     if (signature === lastPageContextSignature) {
       return;
     }
     lastPageContextSignature = signature;
-    logger.debug("content", "page_context", pageContext);
+    logger.debug("content", "page_context", nextContext);
     await safeSendMessage({
       type: "RASHNU_PAGE_CONTEXT",
       payload: {
-        ...pageContext,
+        ...nextContext,
         pageKey: currentPageKey
       }
     });
   }
 
-  async function refreshCards() {
+  async function refreshCards(context = null) {
     const revision = ++refreshRevision;
-    pageContext = extractor.getPageContext();
-    resetLocalStateIfNeeded(pageContext);
+    const nextContext = context || getCurrentPageContext();
+    resetLocalStateIfNeeded(nextContext);
     if (!panelActive) {
       clearGuideBadges();
       clearHighlightedElement();
       return;
     }
-    if (!pageContext.isSupported) {
+    if (!nextContext.isSupported) {
       return;
     }
 
-    const records = await Promise.resolve(extractor.scanPageItems());
+    const records = await Promise.resolve(extractor.scanPageItems(nextContext));
     if (revision !== refreshRevision) {
       return;
     }
     const visibleRecordCount = records.reduce((count, record) => count + (computeRecordVisibility(record) ? 1 : 0), 0);
     logger.debug("content", "scan_snapshot", {
       pageKey: currentPageKey,
-      mode: pageContext.mode,
-      site: pageContext.site,
+      mode: nextContext.mode,
+      site: nextContext.site,
       extractedCount: records.length,
       visibleRecordCount,
       sourceSample: records.slice(0, 6).map((record) => record?.item?.sourceId || "")
     });
-    pruneStaleRows(records, pageContext);
+    pruneStaleRows(records, nextContext);
     logger.debug("content", "refresh_cards", {
-      mode: pageContext.mode,
-      site: pageContext.site,
+      mode: nextContext.mode,
+      site: nextContext.site,
       count: records.length
     });
 
@@ -206,7 +217,7 @@
 
     renderGuideBadges();
 
-    if (pageContext.mode === "detail" && records[0]?.item?.sourceId) {
+    if (nextContext.mode === "detail" && records[0]?.item?.sourceId) {
       const row = rowState.get(records[0].item.sourceId);
       if (row) {
         row.lastSeenAt = Date.now();
@@ -221,9 +232,9 @@
             type: "RASHNU_ITEM_FOCUS",
             payload: {
               pageKey: currentPageKey,
-              pageUrl: pageContext?.pageUrl || location.href,
-              mode: pageContext?.mode || "unsupported",
-              site: pageContext?.site || "unsupported",
+              pageUrl: nextContext?.pageUrl || location.href,
+              mode: nextContext?.mode || "unsupported",
+              site: nextContext?.site || "unsupported",
               item: {
                 ...row.item,
                 seenAt: Date.now()
@@ -612,29 +623,34 @@
     }
     window.clearTimeout(handleDomMutation._timerId);
     handleDomMutation._timerId = window.setTimeout(async () => {
-      await notifyPageState();
-      refreshCards();
+      extractor.invalidatePageContextCache();
+      scheduleLocationPollingFallback("dom_mutation", 4000);
+      const nextContext = getCurrentPageContext({ forceRefresh: true });
+      await notifyPageState(nextContext);
+      refreshCards(nextContext);
     }, 300);
   }
 
   async function handleForcedRescan() {
     listingNavigationResetUntil = Date.now() + 7000;
     resetLocalState();
-    pageContext = extractor.getPageContext();
+    extractor.invalidatePageContextCache();
+    pageContext = getCurrentPageContext({ forceRefresh: true });
     await syncSettings();
-    await notifyPageState();
+    await notifyPageState(pageContext);
     if (panelActive) {
-      refreshCards();
+      refreshCards(pageContext);
     }
   }
 
   async function handleSoftRescan() {
     listingNavigationResetUntil = Date.now() + 7000;
-    pageContext = extractor.getPageContext();
+    extractor.invalidatePageContextCache();
+    pageContext = getCurrentPageContext({ forceRefresh: true });
     await syncSettings();
-    await notifyPageState();
+    await notifyPageState(pageContext);
     if (panelActive) {
-      refreshCards();
+      refreshCards(pageContext);
     }
   }
 
@@ -683,22 +699,25 @@
 
     const originalPushState = history.pushState;
     const originalReplaceState = history.replaceState;
-    const handleLocationChange = (force = false, source = "unknown") => {
+    locationChangeHandler = (force = false, source = "unknown") => {
       if (!force && lastKnownHref === location.href) {
         return;
       }
       lastKnownHref = location.href;
       listingNavigationResetUntil = Date.now() + 7000;
       navigationEpoch += 1;
+      extractor.invalidatePageContextCache();
       resetLocalState();
-      notifyPageState()
-        .then(() => sendEmptySyncSnapshot(pageContext))
+      const nextContext = getCurrentPageContext({ forceRefresh: true });
+      notifyPageState(nextContext)
+        .then(() => sendEmptySyncSnapshot(nextContext))
         .catch(() => {});
       logger.debug("content", "navigation_reset", {
         source,
         href: location.href,
         navigationEpoch
       });
+      scheduleLocationPollingFallback("navigation");
       if (panelActive) {
         scheduleNavigationRescan();
       }
@@ -706,37 +725,36 @@
 
     history.pushState = function patchedPushState(...args) {
       const result = originalPushState.apply(this, args);
-      handleLocationChange(true, "pushState");
+      locationChangeHandler(true, "pushState");
       return result;
     };
 
     history.replaceState = function patchedReplaceState(...args) {
       const result = originalReplaceState.apply(this, args);
-      handleLocationChange(true, "replaceState");
+      locationChangeHandler(true, "replaceState");
       return result;
     };
 
-    window.addEventListener("popstate", () => handleLocationChange(true, "popstate"), true);
-    window.addEventListener("hashchange", () => handleLocationChange(true, "hashchange"), true);
+    window.addEventListener("popstate", () => locationChangeHandler(true, "popstate"), true);
+    window.addEventListener("hashchange", () => locationChangeHandler(true, "hashchange"), true);
     window.addEventListener(
       "pageshow",
       (event) => {
         if (event?.persisted) {
-          handleLocationChange(true, "pageshow.persisted");
+          locationChangeHandler(true, "pageshow.persisted");
           return;
         }
         if (lastKnownHref !== location.href) {
-          handleLocationChange(true, "pageshow.href_changed");
+          locationChangeHandler(true, "pageshow.href_changed");
           return;
         }
         if (panelActive) {
+          scheduleLocationPollingFallback("pageshow");
           scheduleNavigationRescan();
         }
       },
       true
     );
-
-    locationPollTimer = window.setInterval(() => handleLocationChange(false, "location_poll"), 800);
   }
 
   function scheduleNavigationRescan() {
@@ -753,12 +771,15 @@
         return;
       }
       navigationRescanAttempts += 1;
-      await notifyPageState();
+      const nextContext = getCurrentPageContext({
+        forceRefresh: navigationRescanAttempts === 1
+      });
+      await notifyPageState(nextContext);
       if (!panelActive) {
         navigationRescanTimer = null;
         return;
       }
-      await refreshCards();
+      await refreshCards(nextContext);
       const hasRows = rowState.size > 0;
       const shouldContinue = navigationRescanAttempts < 8 && (!pageContext?.isSupported || !hasRows);
       if (!shouldContinue) {
@@ -809,14 +830,16 @@
       if (Object.prototype.hasOwnProperty.call(changes, "rashnuPanelActive")) {
         panelActive = Boolean(changes.rashnuPanelActive.newValue);
         if (!panelActive) {
+          stopLocationPollingFallback();
           clearGuideBadges();
           clearHighlightedElement();
           focusedSourceId = null;
           resetLocalState();
-          notifyPageState().catch(() => {});
+          notifyPageState(getCurrentPageContext()).catch(() => {});
           return;
         }
-        notifyPageState().catch(() => {});
+        scheduleLocationPollingFallback("panel_active");
+        notifyPageState(getCurrentPageContext({ forceRefresh: true })).catch(() => {});
         scheduleNavigationRescan();
       }
     });
@@ -862,6 +885,36 @@
         threshold: 0.2
       });
     }
+  }
+
+  function stopLocationPollingFallback() {
+    if (locationPollFallbackTimer) {
+      window.clearTimeout(locationPollFallbackTimer);
+      locationPollFallbackTimer = null;
+    }
+    if (locationPollTimer) {
+      window.clearInterval(locationPollTimer);
+      locationPollTimer = null;
+    }
+  }
+
+  function scheduleLocationPollingFallback(_reason, durationMs = LOCATION_POLL_FALLBACK_WINDOW_MS) {
+    if (!panelActive || typeof locationChangeHandler !== "function") {
+      stopLocationPollingFallback();
+      return;
+    }
+    if (!locationPollTimer) {
+      locationPollTimer = window.setInterval(() => {
+        locationChangeHandler(false, "location_poll");
+      }, LOCATION_POLL_INTERVAL_MS);
+    }
+    if (locationPollFallbackTimer) {
+      window.clearTimeout(locationPollFallbackTimer);
+    }
+    // Keep polling as a limited fallback while the panel is active; history events remain the primary signal.
+    locationPollFallbackTimer = window.setTimeout(() => {
+      stopLocationPollingFallback();
+    }, durationMs);
   }
 
   function ensureHighlightStyle() {

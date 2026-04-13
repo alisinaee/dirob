@@ -12,6 +12,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
   const LOG_STORAGE_KEY = "rashnuLogs";
   const LOG_HELPER_BASE_URL = "http://127.0.0.1:45173";
   const LOG_FLUSH_BATCH_SIZE = 20;
+  const LOG_STORAGE_FLUSH_DEBOUNCE_MS = 350;
   const NAVIGATION_RESCAN_DEBOUNCE_MS = 220;
   const TECHNOLIFE_BUILD_ID_TTL_MS = 30 * 60 * 1000;
   const QUERY_TRANSLATION_CACHE_TTL_MS = 12 * 60 * 60 * 1000;
@@ -60,6 +61,23 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     [/خاکستری/gu, "gray"]
   ];
   const PROVIDER_SITES = ["torob", "digikala", "technolife", "emalls", "amazon", "ebay"];
+  const GLOBAL_SEARCH_USED_KEYWORDS = [
+    "استوک",
+    "used",
+    "refurbished",
+    "renewed",
+    "open box",
+    "اوپن باکس",
+    "کارکرده",
+    "دست دوم",
+    "second hand",
+    "secondhand",
+    "preowned",
+    "pre owned"
+  ];
+  const GLOBAL_SEARCH_INCLUDE_SUGGESTION_LIMIT = 10;
+  const GLOBAL_SEARCH_EXCLUDE_SUGGESTION_LIMIT = 6;
+  const GLOBAL_SEARCH_SUGGESTION_SAMPLE_LIMIT = 18;
   const AMAZON_API_CREDENTIALS_KEY = "rashnuAmazonApiCredentials";
   const EBAY_API_CREDENTIALS_KEY = "rashnuEbayApiCredentials";
   const inFlightQueries = new Map();
@@ -90,6 +108,8 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
   let providerSearchEnabled = getDefaultProviderFlags();
   let providerPriceVisible = getDefaultProviderFlags();
   let logFlushTimer = null;
+  let logPersistTimer = null;
+  let logPersistPending = false;
   let stateFlushTimer = null;
   const navigationRescanDebounceTimers = new Map();
   let stateSnapshotSerial = 0;
@@ -120,6 +140,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       }).catch(() => {});
     }
     addLog("info", "background", "initialized");
+    await persistLogsToStorage(true);
   }
 
   async function loadSettings() {
@@ -337,6 +358,25 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     if (message.type === "RASHNU_PANEL_GET_STATE") {
       getPanelState().then(sendResponse);
       return true;
+    }
+
+    if (message.type === "RASHNU_OPEN_GLOBAL_SEARCH_TAB") {
+      openGlobalSearchTab(message.payload || {}).then(sendResponse);
+      return true;
+    }
+
+    if (message.type === "RASHNU_GLOBAL_SEARCH_TAB_OPENED") {
+      const tabId = sender.tab?.id;
+      const windowId = sender.tab?.windowId;
+      if (tabId != null) {
+        closeSidePanelForWindow(windowId ?? null, tabId)
+          .then(() => disableSidePanelForTab(tabId))
+          .then(() => sendResponse({ ok: true }))
+          .catch(() => sendResponse({ ok: false }));
+        return true;
+      }
+      sendResponse({ ok: false });
+      return false;
     }
 
     if (message.type === "RASHNU_GLOBAL_SEARCH") {
@@ -1474,6 +1514,424 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     return output;
   }
 
+  function normalizeGlobalSearchTerms(value) {
+    const input = Array.isArray(value) ? value : [];
+    const output = [];
+    const seen = new Set();
+    for (const entry of input) {
+      const cleaned = globalThis.RashnuNormalize.normalizeWhitespace(
+        globalThis.RashnuNormalize.cleanProductTitle(entry) || entry
+      );
+      const comparable = globalThis.RashnuNormalize.normalizeText(cleaned);
+      if (!cleaned || !comparable || seen.has(comparable)) {
+        continue;
+      }
+      seen.add(comparable);
+      output.push(cleaned);
+    }
+    return output;
+  }
+
+  function normalizeGlobalSearchConditionFilter(value) {
+    return value === "new_only" || value === "used_only" ? value : "any";
+  }
+
+  function buildGlobalSearchControls(payload, query) {
+    const includeTerms = normalizeGlobalSearchTerms(payload?.includeTerms);
+    const excludeTerms = normalizeGlobalSearchTerms(payload?.excludeTerms);
+    return {
+      baseQuery: query,
+      includeTerms,
+      excludeTerms,
+      includeComparableTerms: includeTerms.map((term) => globalThis.RashnuNormalize.normalizeText(term)),
+      excludeComparableTerms: excludeTerms.map((term) => globalThis.RashnuNormalize.normalizeText(term)),
+      conditionFilter: normalizeGlobalSearchConditionFilter(payload?.conditionFilter),
+      dedupeEnabled: Boolean(payload?.dedupeEnabled)
+    };
+  }
+
+  function serializeGlobalSearchQueryPlan(controls) {
+    return {
+      baseQuery: controls.baseQuery,
+      includeTerms: [...controls.includeTerms],
+      excludeTerms: [...controls.excludeTerms],
+      conditionFilter: controls.conditionFilter
+    };
+  }
+
+  function normalizeGlobalSearchComparableTitle(value) {
+    const cleaned = globalThis.RashnuNormalize.cleanProductTitle(value) || value;
+    return globalThis.RashnuNormalize.normalizeText(cleaned);
+  }
+
+  function hasUsedConditionTerm(title) {
+    const comparableTitle = normalizeGlobalSearchComparableTitle(title);
+    if (!comparableTitle) {
+      return false;
+    }
+    return GLOBAL_SEARCH_USED_KEYWORDS.some((keyword) =>
+      comparableTitle.includes(globalThis.RashnuNormalize.normalizeText(keyword))
+    );
+  }
+
+  function candidateMatchesGlobalSearchControls(candidate, controls) {
+    const comparableTitle = normalizeGlobalSearchComparableTitle(candidate?.title || "");
+    if (!comparableTitle) {
+      return false;
+    }
+    if (controls.includeComparableTerms.some((term) => !comparableTitle.includes(term))) {
+      return false;
+    }
+    if (controls.excludeComparableTerms.some((term) => comparableTitle.includes(term))) {
+      return false;
+    }
+    const hasUsedTerm = hasUsedConditionTerm(comparableTitle);
+    if (controls.conditionFilter === "used_only" && !hasUsedTerm) {
+      return false;
+    }
+    if (controls.conditionFilter === "new_only" && hasUsedTerm) {
+      return false;
+    }
+    return true;
+  }
+
+  function dedupeGlobalSearchCandidates(provider, candidates) {
+    const groups = [];
+    for (const candidate of candidates) {
+      const matchingGroup = groups.find((group) => areGlobalSearchCandidatesNearDuplicate(provider, group.representative, candidate));
+      if (!matchingGroup) {
+        groups.push({
+          representative: {
+            ...candidate,
+            duplicateCount: 1,
+            duplicateTitles: candidate?.title ? [candidate.title] : []
+          }
+        });
+        continue;
+      }
+      matchingGroup.representative.duplicateCount += 1;
+      if (candidate?.title && !matchingGroup.representative.duplicateTitles.includes(candidate.title)) {
+        matchingGroup.representative.duplicateTitles.push(candidate.title);
+      }
+      if (Number(candidate?.confidence || 0) > Number(matchingGroup.representative?.confidence || 0)) {
+        matchingGroup.representative = {
+          ...candidate,
+          duplicateCount: matchingGroup.representative.duplicateCount,
+          duplicateTitles: matchingGroup.representative.duplicateTitles
+        };
+      }
+    }
+    return groups.map((group) => group.representative);
+  }
+
+  function areGlobalSearchCandidatesNearDuplicate(provider, leftCandidate, rightCandidate) {
+    const leftUrl = globalThis.RashnuNormalize.canonicalizeUrl(leftCandidate?.targetUrl || "");
+    const rightUrl = globalThis.RashnuNormalize.canonicalizeUrl(rightCandidate?.targetUrl || "");
+    if (leftUrl && rightUrl && leftUrl === rightUrl) {
+      return true;
+    }
+
+    const leftTitle = globalThis.RashnuNormalize.cleanProductTitle(leftCandidate?.title || "");
+    const rightTitle = globalThis.RashnuNormalize.cleanProductTitle(rightCandidate?.title || "");
+    const leftComparable = globalThis.RashnuNormalize.normalizeText(leftTitle);
+    const rightComparable = globalThis.RashnuNormalize.normalizeText(rightTitle);
+    if (!leftComparable || !rightComparable) {
+      return false;
+    }
+    if (leftComparable === rightComparable) {
+      return true;
+    }
+    if (leftComparable.includes(rightComparable) || rightComparable.includes(leftComparable)) {
+      return true;
+    }
+
+    const leftSplit = globalThis.RashnuNormalize.splitTokens(leftTitle);
+    const rightSplit = globalThis.RashnuNormalize.splitTokens(rightTitle);
+    const leftText = new Set(globalThis.RashnuNormalize.filterMeaningfulTokens(leftSplit.textTokens));
+    const rightText = new Set(globalThis.RashnuNormalize.filterMeaningfulTokens(rightSplit.textTokens));
+    const leftNumeric = new Set(leftSplit.numericTokens);
+    const rightNumeric = new Set(rightSplit.numericTokens);
+    const overlap = ratio(leftText, rightText);
+    const numericOverlap = ratio(leftNumeric, rightNumeric);
+    const leftBrand = globalThis.RashnuNormalize.inferBrand(leftTitle);
+    const rightBrand = globalThis.RashnuNormalize.inferBrand(rightTitle);
+    const brandMatches = !leftBrand || !rightBrand || leftBrand === rightBrand;
+
+    if (brandMatches && overlap >= 0.82) {
+      return true;
+    }
+    if (brandMatches && overlap >= 0.68 && numericOverlap > 0) {
+      return true;
+    }
+    if (provider === "torob" && brandMatches && overlap >= 0.62 && numericOverlap >= 0.5) {
+      return true;
+    }
+    return false;
+  }
+
+  function buildGlobalSearchSuggestions(providers, controls) {
+    const includeSuggestions = new Map();
+    const excludeSuggestions = new Map();
+    const excludeKeywordSuggestions = new Map();
+    const blockedComparableTerms = new Set([
+      ...controls.includeComparableTerms,
+      ...controls.excludeComparableTerms
+    ]);
+    const queryTokens = new Set([
+      ...globalThis.RashnuNormalize.filterMeaningfulTokens(globalThis.RashnuNormalize.splitTokens(controls.baseQuery).textTokens),
+      ...controls.includeTerms.flatMap((term) => globalThis.RashnuNormalize.filterMeaningfulTokens(globalThis.RashnuNormalize.splitTokens(term).textTokens)),
+      ...controls.excludeTerms.flatMap((term) => globalThis.RashnuNormalize.filterMeaningfulTokens(globalThis.RashnuNormalize.splitTokens(term).textTokens))
+    ]);
+    const blockedTokens = new Set([
+      ...queryTokens,
+      "torob",
+      "digikala",
+      "technolife",
+      "emalls",
+      "amazon",
+      "ebay"
+    ]);
+    const rows = [];
+    let foregroundCount = 0;
+    let tailCount = 0;
+
+    for (const provider of Object.values(providers || {})) {
+      const sourceRows = Array.isArray(provider?.suggestionRows) && provider.suggestionRows.length
+        ? provider.suggestionRows
+        : Array.isArray(provider?.results)
+          ? provider.results
+          : [];
+      const foregroundSize = sourceRows.length <= 3 ? sourceRows.length : Math.min(Math.max(3, Math.ceil(sourceRows.length * 0.4)), 6);
+      for (let index = 0; index < sourceRows.length; index += 1) {
+        const row = sourceRows[index];
+        const band = index < foregroundSize ? "foreground" : "tail";
+        rows.push({
+          ...row,
+          band
+        });
+        if (band === "foreground") {
+          foregroundCount += 1;
+        } else {
+          tailCount += 1;
+        }
+      }
+    }
+
+    for (const row of rows) {
+      const cleanedTitle = globalThis.RashnuNormalize.cleanProductTitle(row?.title || "");
+      const comparableTitle = globalThis.RashnuNormalize.normalizeText(cleanedTitle);
+      if (!comparableTitle) {
+        continue;
+      }
+      const band = row.band === "tail" ? "tail" : "foreground";
+      const weight =
+        1 +
+        Math.max(0, Math.min(0.7, Number(row?.confidence || 0))) +
+        Math.max(0, Math.min(2, Number(row?.duplicateCount || 1) - 1)) * 0.2 +
+        (band === "foreground" ? 0.35 : 0);
+
+      for (const keyword of GLOBAL_SEARCH_USED_KEYWORDS) {
+        const normalizedKeyword = globalThis.RashnuNormalize.normalizeText(keyword);
+        if (
+          !normalizedKeyword ||
+          blockedComparableTerms.has(normalizedKeyword) ||
+          queryTokens.has(normalizedKeyword) ||
+          comparableTitle.includes(normalizedKeyword) === false
+        ) {
+          continue;
+        }
+        const existing = excludeKeywordSuggestions.get(normalizedKeyword);
+        excludeKeywordSuggestions.set(normalizedKeyword, {
+          type: "exclude",
+          label: formatGlobalSearchSuggestionLabel(keyword),
+          reason: "used_term",
+          docCount: (existing?.docCount || 0) + 1,
+          weight: (existing?.weight || 0) + weight,
+          foregroundDocs: (existing?.foregroundDocs || 0) + (band === "foreground" ? 1 : 0),
+          tailDocs: (existing?.tailDocs || 0) + (band === "tail" ? 1 : 0)
+        });
+      }
+
+      const split = globalThis.RashnuNormalize.splitTokens(cleanedTitle);
+      const tokens = new Set(globalThis.RashnuNormalize.filterMeaningfulTokens(split.textTokens));
+      for (const token of tokens) {
+        if (
+          !token ||
+          token.length < 2 ||
+          blockedTokens.has(token) ||
+          blockedComparableTerms.has(globalThis.RashnuNormalize.normalizeText(token))
+        ) {
+          continue;
+        }
+        const reason = classifyGlobalSearchSuggestionReason(token);
+        const existingInclude = includeSuggestions.get(token);
+        includeSuggestions.set(token, {
+          type: "include",
+          label: formatGlobalSearchSuggestionLabel(token),
+          reason,
+          docCount: (existingInclude?.docCount || 0) + 1,
+          weight: (existingInclude?.weight || 0) + weight,
+          foregroundDocs: (existingInclude?.foregroundDocs || 0) + (band === "foreground" ? 1 : 0),
+          tailDocs: (existingInclude?.tailDocs || 0) + (band === "tail" ? 1 : 0)
+        });
+        const existingExclude = excludeSuggestions.get(token);
+        excludeSuggestions.set(token, {
+          type: "exclude",
+          label: formatGlobalSearchSuggestionLabel(token),
+          reason: reason === "repeated_brand" || reason === "repeated_spec" ? reason : "repeated_token",
+          docCount: (existingExclude?.docCount || 0) + 1,
+          weight: (existingExclude?.weight || 0) + weight,
+          foregroundDocs: (existingExclude?.foregroundDocs || 0) + (band === "foreground" ? 1 : 0),
+          tailDocs: (existingExclude?.tailDocs || 0) + (band === "tail" ? 1 : 0)
+        });
+      }
+    }
+
+    const totalRows = Math.max(rows.length, 1);
+    const safeForegroundCount = Math.max(foregroundCount, 1);
+    const safeTailCount = Math.max(tailCount, 1);
+    const includeList = [...includeSuggestions.values()]
+      .map((entry) => {
+        const foregroundRate = entry.foregroundDocs / safeForegroundCount;
+        const overallRate = entry.docCount / totalRows;
+        const concentrationGain = foregroundRate - overallRate;
+        const dominance = foregroundRate / Math.max(overallRate, 0.08);
+        let score =
+          concentrationGain * Math.max(1, Math.log2(dominance + 1)) +
+          entry.weight * 0.08 +
+          (entry.reason === "repeated_spec" ? 0.26 : entry.reason === "repeated_brand" ? 0.2 : 0);
+        if (entry.tailDocs === 0) {
+          score += 0.12;
+        }
+        return {
+          ...entry,
+          score
+        };
+      })
+      .filter((entry) => {
+        if (entry.reason === "repeated_spec" || entry.reason === "repeated_brand") {
+          return entry.foregroundDocs >= 1;
+        }
+        return entry.docCount >= 2 && entry.foregroundDocs >= 1;
+      })
+      .sort((left, right) => right.score - left.score || right.foregroundDocs - left.foregroundDocs || String(left.label).localeCompare(String(right.label)))
+      .slice(0, GLOBAL_SEARCH_INCLUDE_SUGGESTION_LIMIT);
+
+    const excludeList = [
+      ...[...excludeKeywordSuggestions.values()].map((entry) => ({
+        ...entry,
+        score: entry.weight + entry.docCount * 0.45 + entry.tailDocs * 0.3
+      })),
+      ...[...excludeSuggestions.values()].map((entry) => {
+        const tailRate = entry.tailDocs / safeTailCount;
+        const foregroundRate = entry.foregroundDocs / safeForegroundCount;
+        const separation = tailRate - foregroundRate;
+        let score =
+          separation * Math.max(1, Math.log2((tailRate + 0.08) / Math.max(foregroundRate + 0.04, 0.04) + 1)) +
+          entry.weight * 0.07 +
+          (entry.reason === "repeated_brand" ? 0.12 : 0);
+        if (entry.foregroundDocs === 0) {
+          score += 0.12;
+        }
+        return {
+          ...entry,
+          score
+        };
+      })
+        .filter((entry) => {
+          if (entry.tailDocs === 0) {
+            return false;
+          }
+          if (entry.reason === "repeated_brand" || entry.reason === "repeated_spec") {
+            return entry.tailDocs >= 1 && entry.foregroundDocs === 0;
+          }
+          return entry.docCount >= 2 && entry.tailDocs > entry.foregroundDocs;
+        })
+    ]
+      .sort(
+        (left, right) =>
+          right.score - left.score ||
+          Number(right.tailDocs || 0) - Number(left.tailDocs || 0) ||
+          String(left.label).localeCompare(String(right.label))
+      );
+
+    const seenSuggestionKeys = new Set();
+    const output = [];
+    for (const entry of excludeList) {
+      const comparableLabel = globalThis.RashnuNormalize.normalizeText(entry.label);
+      if (!comparableLabel || seenSuggestionKeys.has(`exclude:${comparableLabel}`)) {
+        continue;
+      }
+      seenSuggestionKeys.add(`exclude:${comparableLabel}`);
+      output.push({
+        type: "exclude",
+        label: entry.label,
+        reason: entry.reason
+      });
+      if (output.filter((item) => item.type === "exclude").length >= GLOBAL_SEARCH_EXCLUDE_SUGGESTION_LIMIT) {
+        break;
+      }
+    }
+
+    for (const entry of includeList) {
+      const comparableLabel = globalThis.RashnuNormalize.normalizeText(entry.label);
+      if (!comparableLabel || seenSuggestionKeys.has(`include:${comparableLabel}`)) {
+        continue;
+      }
+      seenSuggestionKeys.add(`include:${comparableLabel}`);
+      output.push({
+        type: "include",
+        label: entry.label,
+        reason: entry.reason
+      });
+      if (output.filter((item) => item.type === "include").length >= GLOBAL_SEARCH_INCLUDE_SUGGESTION_LIMIT) {
+        break;
+      }
+    }
+
+    return output;
+  }
+
+  function classifyGlobalSearchSuggestionReason(token) {
+    if (/^(?:m\d+|\d+(?:gb|tb)|[a-z]{1,5}\d+[a-z0-9]*|\d+[a-z]{1,4})$/i.test(token)) {
+      return "repeated_spec";
+    }
+    if (globalThis.RashnuNormalize.inferBrand(token)) {
+      return "repeated_brand";
+    }
+    return "repeated_token";
+  }
+
+  function formatGlobalSearchSuggestionLabel(value) {
+    const raw = String(value || "").trim();
+    if (/^\d+(gb|tb)$/i.test(raw)) {
+      return raw.replace(/(gb|tb)$/i, (unit) => unit.toUpperCase());
+    }
+    if (/^(?:m\d+|[a-z]{1,5}\d+[a-z0-9]*|\d+[a-z]{1,4})$/i.test(raw)) {
+      return raw.toUpperCase();
+    }
+    if (raw === "apple") {
+      return "Apple";
+    }
+    return raw;
+  }
+
+  function ratio(leftSet, rightSet) {
+    const left = leftSet instanceof Set ? leftSet : new Set(leftSet || []);
+    const right = rightSet instanceof Set ? rightSet : new Set(rightSet || []);
+    const union = new Set([...left, ...right]).size;
+    if (!union) {
+      return 0;
+    }
+    let intersection = 0;
+    for (const token of left) {
+      if (right.has(token)) {
+        intersection += 1;
+      }
+    }
+    return intersection / union;
+  }
+
   function classifyGlobalSearchCandidates(ranked) {
     if (!ranked.length) {
       return {
@@ -1494,6 +1952,17 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     };
   }
 
+  function normalizeGlobalSearchImageUrl(value) {
+    const raw = String(value || "").trim();
+    if (!raw) {
+      return null;
+    }
+    if (raw.startsWith("//")) {
+      return `https:${raw}`;
+    }
+    return raw;
+  }
+
   function buildGlobalSearchRow(provider, candidate, rank, searchUrl) {
     const priceValue =
       Number.isFinite(candidate?.priceValue) ? candidate.priceValue : Number.isFinite(candidate?.price) ? candidate.price : null;
@@ -1507,12 +1976,23 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       provider,
       rank,
       title: candidate?.title || "",
+      imageUrl: normalizeGlobalSearchImageUrl(
+        candidate?.imageUrl ||
+        candidate?.image_url ||
+        candidate?.thumbnailUrl ||
+        candidate?.thumbnail_url ||
+        candidate?.thumbnail ||
+        candidate?.image ||
+        candidate?.img ||
+        candidate?.photo
+      ),
       priceText: candidate?.priceText || null,
       priceValue,
       originalPriceText: candidate?.originalPriceText || null,
       originalPriceValue,
       discountPercent: candidate?.discountPercent || null,
       confidence: Number.isFinite(candidate?.confidence) ? candidate.confidence : 0,
+      duplicateCount: Number(candidate?.duplicateCount || 0) > 1 ? Number(candidate.duplicateCount) : 1,
       targetUrl: candidate?.targetUrl || searchUrl,
       searchUrl
     };
@@ -1520,14 +2000,21 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
 
   function buildGlobalSearchProviderResponse(provider, query, ranked, options = {}) {
     const searchUrl = options.searchUrl || buildSearchUrlForSite(provider, query);
-    const classification = classifyGlobalSearchCandidates(ranked);
+    const controls = options.controls || buildGlobalSearchControls({}, query);
+    const filtered = ranked.filter((candidate) => candidateMatchesGlobalSearchControls(candidate, controls));
+    const deduped = controls.dedupeEnabled ? dedupeGlobalSearchCandidates(provider, filtered) : filtered;
+    const classification = classifyGlobalSearchCandidates(deduped);
     const maxResults = clampGlobalSearchResultLimit(options.maxResults);
+    const suggestionRows = deduped
+      .slice(0, Math.max(maxResults * 4, GLOBAL_SEARCH_SUGGESTION_SAMPLE_LIMIT))
+      .map((candidate, index) => buildGlobalSearchRow(provider, candidate, index + 1, searchUrl));
     return {
       provider,
       status: options.status || classification.status,
       reason: options.reason || classification.reason,
       searchUrl,
-      results: ranked.slice(0, maxResults).map((candidate, index) => buildGlobalSearchRow(provider, candidate, index + 1, searchUrl))
+      results: deduped.slice(0, maxResults).map((candidate, index) => buildGlobalSearchRow(provider, candidate, index + 1, searchUrl)),
+      suggestionRows
     };
   }
 
@@ -1553,6 +2040,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     const query = buildGlobalSearchQuery(payload?.query);
     const requestedProviders = normalizeGlobalSearchProviders(payload?.providers);
     const maxResults = clampGlobalSearchResultLimit(payload?.maxResults);
+    const controls = buildGlobalSearchControls(payload, query);
     if (!query) {
       return {
         ok: false,
@@ -1560,6 +2048,8 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
         query: "",
         requestedProviders,
         maxResults,
+        queryPlan: serializeGlobalSearchQueryPlan(controls),
+        suggestions: [],
         providers: {}
       };
     }
@@ -1570,19 +2060,25 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
         query,
         requestedProviders: [],
         maxResults,
+        queryPlan: serializeGlobalSearchQueryPlan(controls),
+        suggestions: [],
         providers: {}
       };
     }
 
     addLog("info", "background", "global_search_started", {
       query,
-      providers: requestedProviders
+      providers: requestedProviders,
+      includeTerms: controls.includeTerms,
+      excludeTerms: controls.excludeTerms,
+      conditionFilter: controls.conditionFilter,
+      dedupeEnabled: controls.dedupeEnabled
     });
 
     const providerEntries = await Promise.all(
       requestedProviders.map(async (provider) => {
         try {
-          return [provider, await fetchGlobalSearchByProvider(provider, query, maxResults)];
+          return [provider, await fetchGlobalSearchByProvider(provider, query, maxResults, controls)];
         } catch (error) {
           addLog("error", "background", "global_search_provider_failed", {
             query,
@@ -1595,13 +2091,15 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     );
 
     const providers = Object.fromEntries(providerEntries);
+    const suggestions = buildGlobalSearchSuggestions(providers, controls);
     addLog("info", "background", "global_search_completed", {
       query,
       providers: requestedProviders,
       statuses: providerEntries.map(([provider, result]) => ({
         provider,
         status: result?.status || "unknown"
-      }))
+      })),
+      suggestionCount: suggestions.length
     });
 
     return {
@@ -1609,43 +2107,46 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       query,
       requestedProviders,
       maxResults,
+      queryPlan: serializeGlobalSearchQueryPlan(controls),
+      suggestions,
       providers
     };
   }
 
-  async function fetchGlobalSearchByProvider(provider, query, maxResults) {
+  async function fetchGlobalSearchByProvider(provider, query, maxResults, controls) {
     if (provider === "torob") {
-      return fetchTorobGlobalSearch(query, maxResults);
+      return fetchTorobGlobalSearch(query, maxResults, controls);
     }
     if (provider === "digikala") {
-      return fetchDigikalaGlobalSearch(query, maxResults);
+      return fetchDigikalaGlobalSearch(query, maxResults, controls);
     }
     if (provider === "technolife") {
-      return fetchTechnolifeGlobalSearch(query, maxResults);
+      return fetchTechnolifeGlobalSearch(query, maxResults, controls);
     }
     if (provider === "emalls") {
-      return fetchEmallsGlobalSearch(query, maxResults);
+      return fetchEmallsGlobalSearch(query, maxResults, controls);
     }
     if (provider === "amazon") {
-      return fetchAmazonGlobalSearch(query, maxResults);
+      return fetchAmazonGlobalSearch(query, maxResults, controls);
     }
     if (provider === "ebay") {
-      return fetchEbayGlobalSearch(query, maxResults);
+      return fetchEbayGlobalSearch(query, maxResults, controls);
     }
     throw new Error(`unsupported_provider:${provider}`);
   }
 
-  async function fetchTorobGlobalSearch(query, maxResults) {
+  async function fetchTorobGlobalSearch(query, maxResults, controls) {
     const probeItem = buildGlobalSearchProbeItem(query);
     const searchPayload = await fetchJsonWithRetry(buildTorobApiSearchUrl(query));
     const ranked = globalThis.RashnuMatch.rankCandidates(probeItem, searchPayload?.results || []);
     return buildGlobalSearchProviderResponse("torob", query, ranked, {
       searchUrl: globalThis.RashnuNormalize.buildTorobSearchUrl(query),
-      maxResults
+      maxResults,
+      controls
     });
   }
 
-  async function fetchDigikalaGlobalSearch(query, maxResults) {
+  async function fetchDigikalaGlobalSearch(query, maxResults, controls) {
     const probeItem = buildGlobalSearchProbeItem(query);
     try {
       const searchPayload = await fetchJsonWithRetry(buildDigikalaApiSearchUrl(query));
@@ -1655,7 +2156,8 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       );
       return buildGlobalSearchProviderResponse("digikala", query, ranked, {
         searchUrl: globalThis.RashnuNormalize.buildDigikalaSearchUrl(query),
-        maxResults
+        maxResults,
+        controls
       });
     } catch (error) {
       if (!isRecoverableProviderFetchError(error)) {
@@ -1665,7 +2167,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     }
   }
 
-  async function fetchTechnolifeGlobalSearch(query, maxResults) {
+  async function fetchTechnolifeGlobalSearch(query, maxResults, controls) {
     const probeItem = buildGlobalSearchProbeItem(query);
     try {
       let buildId = await getTechnolifeBuildId();
@@ -1687,7 +2189,8 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       );
       return buildGlobalSearchProviderResponse("technolife", query, ranked, {
         searchUrl: globalThis.RashnuNormalize.buildTechnolifeSearchUrl(query),
-        maxResults
+        maxResults,
+        controls
       });
     } catch (error) {
       if (!isRecoverableProviderFetchError(error)) {
@@ -1697,7 +2200,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     }
   }
 
-  async function fetchEmallsGlobalSearch(query, maxResults) {
+  async function fetchEmallsGlobalSearch(query, maxResults, controls) {
     const probeItem = buildGlobalSearchProbeItem(query);
     try {
       const apiRawText = await fetchTextWithRetry(buildEmallsApiSearchUrl(), {
@@ -1724,7 +2227,8 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       const ranked = globalThis.RashnuMatch.rankCandidates(probeItem, mergedCandidates.slice(0, 18));
       return buildGlobalSearchProviderResponse("emalls", query, ranked, {
         searchUrl: globalThis.RashnuNormalize.buildEmallsSearchUrl(query),
-        maxResults
+        maxResults,
+        controls
       });
     } catch (error) {
       if (!isRecoverableProviderFetchError(error)) {
@@ -1734,7 +2238,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     }
   }
 
-  async function fetchAmazonGlobalSearch(query, maxResults) {
+  async function fetchAmazonGlobalSearch(query, maxResults, controls) {
     const probeItem = buildGlobalSearchProbeItem(query);
     const marketplaceQuery = await translateQueryForGlobalMarketplace(query, "amazon");
     const searchUrl = globalThis.RashnuNormalize.buildAmazonSearchUrl(marketplaceQuery);
@@ -1770,13 +2274,15 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
           searchUrl,
           status: "not_found",
           reason: "blocked_by_antibot",
-          maxResults
+          maxResults,
+          controls
         });
       }
       return buildGlobalSearchProviderResponse("amazon", query, ranked, {
         searchUrl,
         reason: ranked.length ? null : "no_results",
-        maxResults
+        maxResults,
+        controls
       });
     } catch (error) {
       if (!isRecoverableProviderFetchError(error)) {
@@ -1786,7 +2292,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     }
   }
 
-  async function fetchEbayGlobalSearch(query, maxResults) {
+  async function fetchEbayGlobalSearch(query, maxResults, controls) {
     const probeItem = buildGlobalSearchProbeItem(query);
     const marketplaceQuery = await translateQueryForGlobalMarketplace(query, "ebay");
     const searchUrl = globalThis.RashnuNormalize.buildEbaySearchUrl(marketplaceQuery);
@@ -1822,13 +2328,15 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
           searchUrl,
           status: "not_found",
           reason: "blocked_by_antibot",
-          maxResults
+          maxResults,
+          controls
         });
       }
       return buildGlobalSearchProviderResponse("ebay", query, ranked, {
         searchUrl,
         reason: ranked.length ? null : "no_results",
-        maxResults
+        maxResults,
+        controls
       });
     } catch (error) {
       if (!isRecoverableProviderFetchError(error)) {
@@ -3649,6 +4157,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       tabId: activeTab.id,
       mode: "page"
     });
+    await persistLogsToStorage(true);
     const state = ensureTabState(activeTab.id);
     state.matchCache.clear();
     state.sourceCache.clear();
@@ -3690,6 +4199,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       mode: "item",
       sourceId
     });
+    await persistLogsToStorage(true);
     const state = ensureTabState(activeTab.id);
     const row = state.rows.get(sourceId);
     if (!row) {
@@ -3756,6 +4266,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
 
   async function forceRescanTab(tabId) {
     const state = ensureTabState(tabId);
+    await persistLogsToStorage(true);
     resetPageState(state);
     try {
       await chrome.tabs.sendMessage(tabId, {
@@ -3801,14 +4312,13 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
   async function clearLogs() {
     logEntries.splice(0, logEntries.length);
     pendingLogEntries.splice(0, pendingLogEntries.length);
-    await chrome.storage.local.set({
-      [LOG_STORAGE_KEY]: []
-    });
+    await persistLogsToStorage(true);
     notifyPanels();
     return { cleared: true };
   }
 
   async function exportLogs() {
+    await persistLogsToStorage(true);
     const payload = {
       exportedAt: new Date().toISOString(),
       logs: logEntries
@@ -3849,9 +4359,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     if (logEntries.length > MAX_LOG_ENTRIES) {
       logEntries.splice(0, logEntries.length - MAX_LOG_ENTRIES);
     }
-    chrome.storage.local.set({
-      [LOG_STORAGE_KEY]: logEntries
-    }).catch(() => {});
+    scheduleLogPersistence();
     scheduleLogFlush();
   }
 
@@ -3868,6 +4376,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     addLog("info", "background", "panel_active_changed", {
       panelActive
     });
+    await persistLogsToStorage(true);
     if (panelActive && options.triggerRescan !== false) {
       const activeTab = await getActiveTab();
       if (activeTab?.id != null) {
@@ -3875,6 +4384,53 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       }
     }
     notifyPanels();
+  }
+
+  async function disableSidePanelForTab(tabId) {
+    if (tabId == null || !chrome.sidePanel?.setOptions) {
+      return;
+    }
+    await chrome.sidePanel.setOptions({
+      tabId,
+      enabled: false
+    }).catch(() => {});
+  }
+
+  async function closeSidePanelForWindow(windowId, tabId) {
+    if (windowId != null && chrome.sidePanel?.close) {
+      const closed = await chrome.sidePanel.close({ windowId }).then(() => true).catch(() => false);
+      if (closed) {
+        return;
+      }
+    }
+    if (tabId != null) {
+      await disableSidePanelForTab(tabId);
+    }
+  }
+
+  function buildGlobalSearchPageUrl(query) {
+    const url = new URL(chrome.runtime.getURL("src/search/search.html"));
+    const normalizedQuery = String(query || "").trim();
+    if (normalizedQuery) {
+      url.searchParams.set("q", normalizedQuery);
+      url.searchParams.set("autorun", "1");
+    }
+    return url.toString();
+  }
+
+  async function openGlobalSearchTab(payload = {}) {
+    const activeTab = await getActiveTab();
+    await closeSidePanelForWindow(activeTab?.windowId ?? null, activeTab?.id ?? null);
+    const tab = await chrome.tabs.create({
+      url: buildGlobalSearchPageUrl(payload?.query)
+    });
+    if (tab?.id != null) {
+      await disableSidePanelForTab(tab.id);
+    }
+    return {
+      ok: true,
+      tabId: tab?.id || null
+    };
   }
 
   async function syncActionIcon() {
@@ -3900,6 +4456,31 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       logFlushTimer = null;
       flushLogsToHelper().catch(() => {});
     }, 350);
+  }
+
+  function scheduleLogPersistence() {
+    logPersistPending = true;
+    if (logPersistTimer) {
+      return;
+    }
+    logPersistTimer = setTimeout(() => {
+      logPersistTimer = null;
+      persistLogsToStorage().catch(() => {});
+    }, LOG_STORAGE_FLUSH_DEBOUNCE_MS);
+  }
+
+  async function persistLogsToStorage(force = false) {
+    if (logPersistTimer) {
+      clearTimeout(logPersistTimer);
+      logPersistTimer = null;
+    }
+    if (!force && !logPersistPending) {
+      return;
+    }
+    logPersistPending = false;
+    await chrome.storage.local.set({
+      [LOG_STORAGE_KEY]: logEntries.slice(-MAX_LOG_ENTRIES)
+    }).catch(() => {});
   }
 
   function scheduleStateFlush() {

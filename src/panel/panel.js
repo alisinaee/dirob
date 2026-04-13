@@ -129,6 +129,7 @@
       sellers: "فروشنده: {value}",
       openTarget: "باز کردن {site}",
       searchTarget: "جست‌وجوی {site}",
+      rashnuSearch: "جست‌وجوی Rashnu",
       google: "جست‌وجوی گوگل",
       reloadItem: "⟳",
       status_loading: "در حال جست‌وجو",
@@ -182,6 +183,7 @@
       statusHint_default: "وضعیت نتیجه این آیتم.",
       openTargetHint: "باز کردن صفحه محصول در {site}.",
       searchTargetHint: "جست‌وجوی این عنوان در {site}.",
+      rashnuSearchHint: "باز کردن جست‌وجوی سراسری Rashnu برای همین عنوان.",
       googleHint: "جست‌وجوی این عنوان در گوگل."
     },
     en: {
@@ -252,6 +254,7 @@
       sellers: "Sellers: {value}",
       openTarget: "Open {site}",
       searchTarget: "Search {site}",
+      rashnuSearch: "Rashnu Search",
       google: "Google",
       reloadItem: "⟳",
       status_loading: "Loading",
@@ -305,6 +308,7 @@
       statusHint_default: "Current matching state for this item.",
       openTargetHint: "Open the product page on {site}.",
       searchTargetHint: "Search this title on {site}.",
+      rashnuSearchHint: "Open Rashnu global search for this exact title.",
       googleHint: "Search this title on Google."
     }
   };
@@ -422,8 +426,9 @@
     });
 
     openSearchButton.addEventListener("click", async () => {
-      await chrome.tabs.create({
-        url: chrome.runtime.getURL("src/search/search.html")
+      await chrome.runtime.sendMessage({
+        type: "RASHNU_OPEN_GLOBAL_SEARCH_TAB",
+        payload: {}
       });
     });
 
@@ -622,6 +627,17 @@
           payload: { sourceId }
         });
         return;
+      }
+
+      if (button.getAttribute("data-item-action") === "rashnu-search") {
+        const query = String(button.getAttribute("data-search-query") || "").trim();
+        if (!query) {
+          return;
+        }
+        await chrome.runtime.sendMessage({
+          type: "RASHNU_OPEN_GLOBAL_SEARCH_TAB",
+          payload: { query }
+        });
       }
     });
 
@@ -936,6 +952,7 @@
     const isGridLayout = state?.layoutMode === "grid";
     const useCompactActions = minimalViewEnabled || isGridLayout;
     const showCornerTools = !useCompactActions;
+    const rashnuSearchQuery = String(item.title || "").trim();
     const imageMarkup = item.imageUrl
       ? `<img src="${escapeHtml(item.imageUrl)}" alt="" data-thumb loading="lazy" referrerpolicy="no-referrer">`
       : "";
@@ -1031,6 +1048,9 @@
     const actionMarkup = useCompactActions
       ? `
         <div class="item-actions item-actions--minimal">
+          <button class="action-button action-button--icon" type="button" data-item-action="rashnu-search" data-search-query="${escapeHtml(rashnuSearchQuery)}" title="${escapeHtml(translation.rashnuSearchHint)}" aria-label="${escapeHtml(translation.rashnuSearchHint)}">
+            <span class="action-icon" aria-hidden="true">R</span>
+          </button>
           ${targetActionMarkupCompact}
           <a class="action-button action-button--icon" data-role="google-link" href="${escapeHtml(googleUrl)}" target="_blank" rel="noreferrer" title="${escapeHtml(translation.googleHint)}" aria-label="${escapeHtml(translation.googleHint)}">
             <span class="action-icon action-icon--google" aria-hidden="true">${buildGoogleIconMarkup()}</span>
@@ -1044,6 +1064,10 @@
         </div>`
       : `
         <div class="item-actions">
+          <button class="action-button action-button--with-icon" type="button" data-item-action="rashnu-search" data-search-query="${escapeHtml(rashnuSearchQuery)}" title="${escapeHtml(translation.rashnuSearchHint)}" aria-label="${escapeHtml(translation.rashnuSearchHint)}">
+            <span class="action-icon" aria-hidden="true">R</span>
+            <span class="action-label">${escapeHtml(translation.rashnuSearch)}</span>
+          </button>
           ${targetActionMarkupRegular}
           <a class="action-button action-button--with-icon" data-role="google-link" href="${escapeHtml(googleUrl)}" target="_blank" rel="noreferrer">
             <span class="action-icon action-icon--google" aria-hidden="true">${buildGoogleIconMarkup()}</span>

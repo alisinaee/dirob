@@ -29,6 +29,17 @@
     return Math.min(max, Math.max(min, value));
   }
 
+  function normalizeImageUrl(value) {
+    const raw = String(value || "").trim();
+    if (!raw) {
+      return null;
+    }
+    if (raw.startsWith("//")) {
+      return `https:${raw}`;
+    }
+    return raw;
+  }
+
   function normalizeCandidate(rawCandidate) {
     const title = [rawCandidate.name1, rawCandidate.name2, rawCandidate.title]
       .filter(Boolean)
@@ -41,9 +52,20 @@
         rawCandidate.productUrl ||
         rawCandidate.url ||
         null;
+    const imageUrl = normalizeImageUrl(
+      rawCandidate.imageUrl ||
+      rawCandidate.image_url ||
+      rawCandidate.thumbnailUrl ||
+      rawCandidate.thumbnail_url ||
+      rawCandidate.thumbnail ||
+      rawCandidate.image ||
+      rawCandidate.img ||
+      rawCandidate.photo
+    );
 
     return {
       title,
+      imageUrl,
       priceText: rawCandidate.price_text || rawCandidate.priceText || "",
       priceValue:
         rawCandidate.price ||
@@ -68,6 +90,7 @@
         name2: rawCandidate.name2 || "",
         price_text: rawCandidate.price_text || "",
         shop_text: rawCandidate.shop_text || "",
+        image_url: imageUrl || "",
         more_info_url: rawCandidate.more_info_url || "",
         web_client_absolute_url: rawCandidate.web_client_absolute_url || "",
         target_url: targetUrl || ""

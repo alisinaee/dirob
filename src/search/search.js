@@ -19,11 +19,28 @@
   const providerChipsNode = document.querySelector("[data-role='provider-chips']");
   const searchAllButton = document.querySelector("[data-action='run-search']");
   const openAllButton = document.querySelector("[data-action='open-all-searches']");
+  const globalSettingsBlock = document.querySelector("[data-role='global-settings-block']");
+  const globalSettingsToggleButton = document.querySelector("[data-action='toggle-global-settings']");
+  const globalSettingsTitleNode = document.querySelector("[data-role='global-settings-title']");
+  const globalSettingsCaptionNode = document.querySelector("[data-role='global-settings-caption']");
+  const globalSettingsStateNode = document.querySelector("[data-role='global-settings-state']");
+  const globalSettingsSummaryNode = document.querySelector("[data-role='global-settings-summary']");
+  const languageButton = document.querySelector("[data-action='toggle-language']");
+  const themeButton = document.querySelector("[data-action='cycle-theme']");
   const groupingToggleButton = document.querySelector("[data-action='toggle-grouping']");
   const groupingLabelNode = document.querySelector("[data-role='grouping-label']");
+  const dedupeToggleButton = document.querySelector("[data-action='toggle-dedupe']");
+  const dedupeLabelNode = document.querySelector("[data-role='dedupe-label']");
   const maxResultsLabelNode = document.querySelector("[data-role='max-results-label']");
   const maxResultsValueNode = document.querySelector("[data-role='max-results-value']");
+  const providerSettingsBlock = document.querySelector("[data-role='provider-settings-block']");
+  const providerSettingsToggleButton = document.querySelector("[data-action='toggle-provider-settings']");
+  const providerSettingsTitleNode = document.querySelector("[data-role='providers-title']");
+  const providerSettingsCaptionNode = document.querySelector("[data-role='providers-caption']");
+  const providerSettingsStateNode = document.querySelector("[data-role='provider-settings-state']");
+  const providerSummaryNode = document.querySelector("[data-role='provider-summary']");
   const providerWarningNode = document.querySelector("[data-role='provider-warning']");
+  const clearFiltersButton = document.querySelector("[data-role='clear-filters']");
   const decreaseMaxResultsButton = document.querySelector("[data-action='decrease-max-results']");
   const increaseMaxResultsButton = document.querySelector("[data-action='increase-max-results']");
   const heroTitleNode = document.querySelector("[data-role='hero-title']");
@@ -32,6 +49,21 @@
   const statusBarNode = document.querySelector("[data-role='status-bar']");
   const resultsBodyNode = document.querySelector("[data-role='results-body']");
   const tableWrapNode = document.querySelector("[data-role='table-wrap']");
+  const includeLabelNode = document.querySelector("[data-role='include-label']");
+  const includeHintNode = document.querySelector("[data-role='include-hint']");
+  const includeChipListNode = document.querySelector("[data-role='include-chip-list']");
+  const includeInput = document.querySelector("[data-role='include-input']");
+  const includeAddButton = document.querySelector("[data-action='add-include']");
+  const excludeLabelNode = document.querySelector("[data-role='exclude-label']");
+  const excludeHintNode = document.querySelector("[data-role='exclude-hint']");
+  const excludeChipListNode = document.querySelector("[data-role='exclude-chip-list']");
+  const excludeInput = document.querySelector("[data-role='exclude-input']");
+  const excludeAddButton = document.querySelector("[data-action='add-exclude']");
+  const conditionLabelNode = document.querySelector("[data-role='condition-label']");
+  const conditionHintNode = document.querySelector("[data-role='condition-hint']");
+  const conditionOptionsNode = document.querySelector("[data-role='condition-options']");
+  const queryPreviewNode = document.querySelector("[data-role='query-preview']");
+  const suggestionsNode = document.querySelector("[data-role='suggestions']");
   const columnNodes = {
     provider: document.querySelector("[data-role='col-provider']"),
     rank: document.querySelector("[data-role='col-rank']"),
@@ -49,12 +81,48 @@
       pageSubtitle: "یک عبارت را در همه‌ی منابع فعال جست‌وجو کن و نتیجه را در یک جدول ببین.",
       providerScope: "{count} منبع فعال",
       shortcutHint: "میانبرها: Cmd/Ctrl+K، O، S، 1..6",
+      globalSettingsTitle: "تنظیمات Rashnu",
+      globalSettingsCaption: "تنظیمات این بخش بالای نوار جست‌وجو می‌ماند.",
+      globalSettingsExpandHint: "باز کردن تنظیمات Rashnu",
+      globalSettingsCollapseHint: "بستن تنظیمات Rashnu",
+      providersTitle: "منابع",
+      providersCaption: "منابع فعال همین تب جست‌وجو را انتخاب کن.",
+      providersExpandHint: "باز کردن منابع",
+      providersCollapseHint: "بستن منابع",
+      accordionExpanded: "بستن",
+      accordionCollapsed: "باز کردن",
       groupByProviders: "گروه‌بندی بر اساس منبع",
+      groupDuplicates: "ادغام موارد مشابه",
       maxResults: "حداکثر نتیجه / منبع",
       searchPlaceholder: "مثلاً: iPhone 15 Pro Max 256",
       searchSubmit: "جست‌وجو",
       searchAllEnabled: "جست‌وجوی همه منابع فعال",
       openAllSearches: "باز کردن جست‌وجوی همه منابع",
+      includeTerms: "باید شامل شود",
+      includeHint: "مثل Apple، M4، 16GB",
+      excludeTerms: "حذف واژه‌ها",
+      excludeHint: "مثل استوک، used، refurbished",
+      clearFilters: "پاک کردن همه فیلترها",
+      chipInputPlaceholder: "عبارت را اضافه کن و Enter بزن",
+      addChip: "افزودن",
+      removeChip: "حذف",
+      conditionLabel: "شرط وضعیت",
+      conditionHint: "روی عنوان‌های نتیجه اعمال می‌شود.",
+      condition_any: "همه",
+      condition_new_only: "فقط نو",
+      condition_used_only: "فقط کارکرده",
+      queryPreviewLabel: "پیش‌نمایش جست‌وجو",
+      previewSearching: "جست‌وجو برای",
+      previewInclude: "باید شامل شود",
+      previewExclude: "حذف شده",
+      previewCondition: "شرط",
+      suggestionsTitle: "پیشنهاد برای دقیق‌تر کردن",
+      suggestion_include: "افزودن",
+      suggestion_exclude: "حذف",
+      suggestionReason_repeated_spec: "مشخصه پرتکرار در نتیجه‌ها",
+      suggestionReason_repeated_brand: "برند پرتکرار در نتیجه‌ها",
+      suggestionReason_used_term: "واژه‌ی پرتکرار مربوط به کارکرده",
+      suggestionReason_repeated_token: "واژه‌ی پرتکرار در نتیجه‌ها",
       heroTitle: "جست‌وجو را از اینجا شروع کن",
       heroBody: "نتیجه‌های رتبه‌بندی‌شده را از هر منبع فعال در یک جدول می‌بینی. انتخاب منبع در این صفحه فقط محلی است و تنظیمات پنل را تغییر نمی‌دهد.",
       providerWarning: "هشدار: آمازون و eBay ممکن است ترافیک افزونه را به‌عنوان رفتار بات تشخیص دهند، بنابراین نتایج این دو منبع همیشه کاملاً قابل اتکا نیست.",
@@ -67,6 +135,19 @@
       noProvidersTitle: "هیچ منبعی فعال نیست",
       noProvidersBody: "برای این نشست حداقل یک منبع را انتخاب کن. این تغییر فقط داخل همین تب اعمال می‌شود.",
       enableAllProviders: "فعال کردن همه منابع",
+      langButton: "FA / EN",
+      switchLanguageHint: "تغییر زبان Rashnu",
+      cycleThemeHint: "تغییر تم Rashnu",
+      theme_system: "خودکار",
+      theme_dark: "تیره",
+      theme_light: "روشن",
+      summaryTheme: "تم {value}",
+      summaryLanguage: "زبان {value}",
+      summaryMaxResults: "{value} / منبع",
+      summaryGroupingOn: "گروهی",
+      summaryGroupingOff: "بدون گروه",
+      summaryDedupeOn: "ادغام مشابه‌ها",
+      summaryDedupeOff: "بدون ادغام",
       colProvider: "منبع",
       colRank: "رتبه",
       colTitle: "عنوان",
@@ -99,19 +180,56 @@
       providerCount: "{count} نتیجه",
       activeRowHint: "ردیف فعال",
       unknown: "نامشخص",
-      rankPrefix: "#{rank}"
+      rankPrefix: "#{rank}",
+      duplicateGroup: "{count} مورد مشابه"
     },
     en: {
       pageTitle: "Global Search",
       pageSubtitle: "Search one phrase across every enabled provider and review the results in a single table.",
       providerScope: "{count} active providers",
       shortcutHint: "Shortcuts: Cmd/Ctrl+K, O, S, 1..6",
+      globalSettingsTitle: "Rashnu Settings",
+      globalSettingsCaption: "These controls stay above the search bar while you work.",
+      globalSettingsExpandHint: "Expand Rashnu settings",
+      globalSettingsCollapseHint: "Collapse Rashnu settings",
+      providersTitle: "Providers",
+      providersCaption: "Choose the active providers for this search tab.",
+      providersExpandHint: "Expand providers",
+      providersCollapseHint: "Collapse providers",
+      accordionExpanded: "Collapse",
+      accordionCollapsed: "Expand",
       groupByProviders: "Group By Provider",
+      groupDuplicates: "Group Duplicates",
       maxResults: "Max Results / Provider",
       searchPlaceholder: "For example: iPhone 15 Pro Max 256",
       searchSubmit: "Search",
       searchAllEnabled: "Search All Enabled",
       openAllSearches: "Open All Provider Searches",
+      includeTerms: "Must Include",
+      includeHint: "For example: Apple, M4, 16GB",
+      excludeTerms: "Exclude Words",
+      excludeHint: "For example: used, refurbished, A1347",
+      clearFilters: "Clear All Filters",
+      chipInputPlaceholder: "Add a phrase and press Enter",
+      addChip: "Add",
+      removeChip: "Remove",
+      conditionLabel: "Condition",
+      conditionHint: "Applied from returned titles.",
+      condition_any: "Any",
+      condition_new_only: "New only",
+      condition_used_only: "Used only",
+      queryPreviewLabel: "Query Preview",
+      previewSearching: "Searching for",
+      previewInclude: "Must include",
+      previewExclude: "Excluded",
+      previewCondition: "Condition",
+      suggestionsTitle: "Refinement Suggestions",
+      suggestion_include: "Add",
+      suggestion_exclude: "Exclude",
+      suggestionReason_repeated_spec: "Repeated spec in results",
+      suggestionReason_repeated_brand: "Repeated brand in results",
+      suggestionReason_used_term: "Repeated used-condition term",
+      suggestionReason_repeated_token: "Repeated result token",
       heroTitle: "Start with a product phrase",
       heroBody: "You will get ranked rows from each enabled provider in one table. Provider selection on this page is session-local and does not overwrite side-panel settings.",
       providerWarning: "Warning: Amazon and eBay may detect extension traffic as bot activity, so results on these providers are not always fully reliable.",
@@ -124,6 +242,19 @@
       noProvidersTitle: "No providers selected",
       noProvidersBody: "Enable at least one provider for this session. This does not rewrite panel settings.",
       enableAllProviders: "Enable All Providers",
+      langButton: "FA / EN",
+      switchLanguageHint: "Switch Rashnu language",
+      cycleThemeHint: "Cycle Rashnu theme",
+      theme_system: "Auto",
+      theme_dark: "Dark",
+      theme_light: "Light",
+      summaryTheme: "Theme {value}",
+      summaryLanguage: "Language {value}",
+      summaryMaxResults: "{value} / provider",
+      summaryGroupingOn: "Grouped",
+      summaryGroupingOff: "Flat",
+      summaryDedupeOn: "Duplicates merged",
+      summaryDedupeOff: "No dedupe",
       colProvider: "Provider",
       colRank: "Rank",
       colTitle: "Title",
@@ -156,7 +287,8 @@
       providerCount: "{count} results",
       activeRowHint: "Active row",
       unknown: "Unknown",
-      rankPrefix: "#{rank}"
+      rankPrefix: "#{rank}",
+      duplicateGroup: "{count} similar results"
     }
   };
 
@@ -164,12 +296,20 @@
     language: "fa",
     themeMode: "system",
     query: "",
+    includeTerms: [],
+    excludeTerms: [],
+    conditionFilter: "any",
     selectedProviders: [],
     groupByProvider: true,
+    dedupeEnabled: false,
+    globalSettingsExpanded: true,
+    providerSettingsExpanded: true,
     maxResults: 3,
     sortKey: "rank",
     sortDir: "asc",
     loading: false,
+    pendingSearchRerun: false,
+    activeSearchRequestId: 0,
     response: null,
     activeRowKey: null
   };
@@ -178,12 +318,20 @@
 
   async function boot() {
     await loadSettings();
+    hydrateInitialQueryFromUrl();
+    await notifyGlobalSearchTabOpened();
     bindEvents();
     render();
     syncStickyOffsets();
     window.setTimeout(() => {
       queryInput.focus();
+      if (state.query) {
+        queryInput.select();
+      }
     }, 0);
+    if (shouldAutorunFromUrl()) {
+      runSearch().catch(() => {});
+    }
   }
 
   async function loadSettings() {
@@ -199,9 +347,77 @@
       await runSearch();
     });
 
+    globalSettingsToggleButton.addEventListener("click", () => {
+      state.globalSettingsExpanded = !state.globalSettingsExpanded;
+      render();
+    });
+
+    providerSettingsToggleButton.addEventListener("click", () => {
+      state.providerSettingsExpanded = !state.providerSettingsExpanded;
+      render();
+    });
+
+    clearFiltersButton.addEventListener("click", () => {
+      clearAllFilters();
+    });
+
+    languageButton.addEventListener("click", () => {
+      cycleLanguage().catch(() => {});
+    });
+
+    themeButton.addEventListener("click", () => {
+      cycleThemeMode().catch(() => {});
+    });
+
     queryInput.addEventListener("input", () => {
       state.query = queryInput.value;
       renderStatus();
+      renderQueryPreview();
+    });
+
+    includeInput.addEventListener("keydown", (event) => {
+      handleChipInputKeydown(event, "include");
+    });
+
+    excludeInput.addEventListener("keydown", (event) => {
+      handleChipInputKeydown(event, "exclude");
+    });
+
+    searchForm.addEventListener("click", (event) => {
+      const addIncludeButton = event.target.closest("[data-action='add-include']");
+      if (addIncludeButton) {
+        commitChipInput("include");
+        return;
+      }
+      const addExcludeButton = event.target.closest("[data-action='add-exclude']");
+      if (addExcludeButton) {
+        commitChipInput("exclude");
+        return;
+      }
+      const removeChipButton = event.target.closest("[data-chip-remove]");
+      if (removeChipButton) {
+        const group = String(removeChipButton.getAttribute("data-chip-remove") || "");
+        const index = Number.parseInt(removeChipButton.getAttribute("data-chip-index") || "", 10);
+        removeChip(group, index);
+        return;
+      }
+      const conditionButton = event.target.closest("[data-condition]");
+      if (conditionButton) {
+        const value = String(conditionButton.getAttribute("data-condition") || "any");
+        if (["any", "new_only", "used_only"].includes(value)) {
+          state.conditionFilter = value;
+          rerunSearchIfNeeded();
+          render();
+        }
+        return;
+      }
+      const suggestionButton = event.target.closest("[data-suggestion-type]");
+      if (suggestionButton) {
+        applySuggestion(
+          String(suggestionButton.getAttribute("data-suggestion-type") || ""),
+          String(suggestionButton.getAttribute("data-suggestion-label") || "")
+        );
+      }
     });
 
     providerChipsNode.addEventListener("click", (event) => {
@@ -229,6 +445,12 @@
     groupingToggleButton.addEventListener("click", () => {
       state.groupByProvider = !state.groupByProvider;
       ensureActiveRow();
+      render();
+    });
+
+    dedupeToggleButton.addEventListener("click", () => {
+      state.dedupeEnabled = !state.dedupeEnabled;
+      rerunSearchIfNeeded();
       render();
     });
 
@@ -322,8 +544,8 @@
 
   async function runSearch() {
     state.query = queryInput.value;
-    const query = String(state.query || "").trim();
-    if (!query) {
+    const payload = buildSearchPayload();
+    if (!payload.query) {
       renderStatus("statusNoQuery");
       queryInput.focus();
       return;
@@ -333,34 +555,47 @@
       return;
     }
 
+    const requestId = state.activeSearchRequestId + 1;
+    state.activeSearchRequestId = requestId;
+    state.pendingSearchRerun = false;
     state.loading = true;
     state.response = null;
     state.activeRowKey = null;
     render();
 
+    const requestSignature = buildSearchSignature(payload);
+    let response = null;
     try {
-      const response = await chrome.runtime.sendMessage({
+      response = await chrome.runtime.sendMessage({
         type: "RASHNU_GLOBAL_SEARCH",
-        payload: {
-          query,
-          providers: state.selectedProviders,
-          maxResults: state.maxResults
-        }
+        payload
       });
-      state.response = response && typeof response === "object" ? response : null;
-      ensureActiveRow();
     } catch (_error) {
-      state.response = {
+      response = {
         ok: false,
         reason: "request_failed",
-        query,
+        query: payload.query,
         requestedProviders: [...state.selectedProviders],
         providers: {}
       };
-    } finally {
+    }
+
+    if (requestId !== state.activeSearchRequestId) {
+      return;
+    }
+
+    const currentSignature = buildSearchSignature(buildSearchPayload());
+    if (state.pendingSearchRerun && currentSignature !== requestSignature) {
       state.loading = false;
       render();
+      runSearch().catch(() => {});
+      return;
     }
+
+    state.response = response && typeof response === "object" ? response : null;
+    ensureActiveRow();
+    state.loading = false;
+    render();
   }
 
   function render() {
@@ -378,6 +613,45 @@
       count: String(state.selectedProviders.length)
     });
     shortcutHintNode.textContent = translation.shortcutHint;
+    globalSettingsTitleNode.textContent = translation.globalSettingsTitle;
+    if (globalSettingsCaptionNode) {
+      globalSettingsCaptionNode.textContent = translation.globalSettingsCaption;
+    }
+    if (globalSettingsStateNode) {
+      globalSettingsStateNode.textContent = state.globalSettingsExpanded
+        ? translation.accordionExpanded
+        : translation.accordionCollapsed;
+    }
+    languageButton.textContent = "A";
+    themeButton.textContent = themeIconFor(state.themeMode);
+    globalSettingsToggleButton.setAttribute("aria-expanded", String(state.globalSettingsExpanded));
+    globalSettingsBlock.classList.toggle("is-expanded", state.globalSettingsExpanded);
+    providerSettingsTitleNode.textContent = translation.providersTitle;
+    if (providerSettingsCaptionNode) {
+      providerSettingsCaptionNode.textContent = translation.providersCaption;
+    }
+    if (providerSettingsStateNode) {
+      providerSettingsStateNode.textContent = state.providerSettingsExpanded
+        ? translation.accordionExpanded
+        : translation.accordionCollapsed;
+    }
+    providerSettingsToggleButton.setAttribute("aria-expanded", String(state.providerSettingsExpanded));
+    providerSettingsBlock.classList.toggle("is-expanded", state.providerSettingsExpanded);
+    clearFiltersButton.textContent = translation.clearFilters;
+    clearFiltersButton.disabled = !hasActiveFilters();
+    setTitleAndAria(
+      globalSettingsToggleButton,
+      state.globalSettingsExpanded ? translation.globalSettingsCollapseHint : translation.globalSettingsExpandHint
+    );
+    setTitleAndAria(
+      providerSettingsToggleButton,
+      state.providerSettingsExpanded ? translation.providersCollapseHint : translation.providersExpandHint
+    );
+    setTitleAndAria(languageButton, translation.switchLanguageHint);
+    setTitleAndAria(
+      themeButton,
+      `${translation.cycleThemeHint} (${translation[`theme_${state.themeMode}`] || translation.theme_system})`
+    );
     queryInput.placeholder = translation.searchPlaceholder;
     queryInput.value = state.query;
     searchSubmitButton.textContent = translation.searchSubmit;
@@ -386,14 +660,33 @@
     openAllButton.disabled = !getProviderSearchEntries().some(({ result }) => Boolean(result?.searchUrl));
     groupingLabelNode.textContent = translation.groupByProviders;
     groupingToggleButton.setAttribute("aria-pressed", String(state.groupByProvider));
+    dedupeLabelNode.textContent = translation.groupDuplicates;
+    dedupeToggleButton.setAttribute("aria-pressed", String(state.dedupeEnabled));
     maxResultsLabelNode.textContent = translation.maxResults;
     maxResultsValueNode.textContent = localizeDynamicText(String(state.maxResults), state.language);
     decreaseMaxResultsButton.disabled = state.maxResults <= 1;
     increaseMaxResultsButton.disabled = state.maxResults >= 10;
+    includeLabelNode.textContent = translation.includeTerms;
+    includeHintNode.textContent = translation.includeHint;
+    includeInput.placeholder = translation.chipInputPlaceholder;
+    includeAddButton.textContent = translation.addChip;
+    excludeLabelNode.textContent = translation.excludeTerms;
+    excludeHintNode.textContent = translation.excludeHint;
+    excludeInput.placeholder = translation.chipInputPlaceholder;
+    excludeAddButton.textContent = translation.addChip;
+    conditionLabelNode.textContent = translation.conditionLabel;
+    conditionHintNode.textContent = translation.conditionHint;
     heroTitleNode.textContent = translation.heroTitle;
     heroBodyNode.textContent = translation.heroBody;
-    providerWarningNode.textContent = translation.providerWarning;
+    renderGlobalSettingsSummary();
     renderProviderChips();
+    renderProviderSummary();
+    renderProviderWarning();
+    renderChipEditor("include");
+    renderChipEditor("exclude");
+    renderConditionOptions();
+    renderQueryPreview();
+    renderSuggestions();
     renderProviderBlocker();
     renderStatus();
     renderColumns();
@@ -417,6 +710,251 @@
         </button>
       `;
     }).join("");
+  }
+
+  function renderProviderSummary() {
+    providerSummaryNode.innerHTML = state.selectedProviders.length
+      ? state.selectedProviders
+          .map((provider) => `<span class="provider-chip provider-chip--static">${escapeHtml(siteLabelFor(provider, state.language))}</span>`)
+          .join("")
+      : `<span class="provider-chip provider-chip--static provider-chip--empty">${escapeHtml(t().noProvidersTitle)}</span>`;
+  }
+
+  function renderProviderWarning() {
+    const showWarning = state.selectedProviders.includes("amazon") || state.selectedProviders.includes("ebay");
+    providerWarningNode.textContent = showWarning ? t().providerWarning : "";
+    providerWarningNode.classList.toggle("is-visible", showWarning);
+  }
+
+  function renderGlobalSettingsSummary() {
+    const translation = t();
+    const languageValue = state.language === "fa" ? "FA" : "EN";
+    globalSettingsSummaryNode.innerHTML = [
+      formatString(translation.summaryLanguage, { value: languageValue }),
+      formatString(translation.summaryTheme, { value: translation[`theme_${state.themeMode}`] || translation.theme_system }),
+      formatString(translation.summaryMaxResults, { value: String(state.maxResults) }),
+      state.groupByProvider ? translation.summaryGroupingOn : translation.summaryGroupingOff,
+      state.dedupeEnabled ? translation.summaryDedupeOn : translation.summaryDedupeOff
+    ]
+      .map((entry) => `<span class="settings-summary-pill">${escapeHtml(localizeDynamicText(entry, state.language))}</span>`)
+      .join("");
+  }
+
+  function hasActiveFilters() {
+    return state.includeTerms.length > 0 || state.excludeTerms.length > 0 || state.conditionFilter !== "any";
+  }
+
+  function renderChipEditor(group) {
+    const terms = group === "include" ? state.includeTerms : state.excludeTerms;
+    const targetNode = group === "include" ? includeChipListNode : excludeChipListNode;
+    const translation = t();
+    targetNode.innerHTML = terms.map((term, index) => `
+      <span class="term-chip">
+        <span>${escapeHtml(localizeDynamicText(term, state.language))}</span>
+        <button type="button" data-chip-remove="${escapeHtml(group)}" data-chip-index="${String(index)}" aria-label="${escapeHtml(translation.removeChip)}">×</button>
+      </span>
+    `).join("");
+  }
+
+  function renderConditionOptions() {
+    const translation = t();
+    const conditions = ["any", "new_only", "used_only"];
+    conditionOptionsNode.innerHTML = conditions.map((value) => `
+      <button
+        class="provider-chip ${state.conditionFilter === value ? "is-active" : ""}"
+        type="button"
+        data-condition="${escapeHtml(value)}"
+        aria-pressed="${String(state.conditionFilter === value)}"
+      >
+        <span>${escapeHtml(translation[`condition_${value}`])}</span>
+      </button>
+    `).join("");
+  }
+
+  function renderQueryPreview() {
+    const translation = t();
+    const plan = buildLocalQueryPlan();
+    if (!plan.baseQuery && !plan.includeTerms.length && !plan.excludeTerms.length && plan.conditionFilter === "any") {
+      queryPreviewNode.innerHTML = "";
+      queryPreviewNode.classList.remove("is-visible");
+      return;
+    }
+    queryPreviewNode.classList.add("is-visible");
+    const rows = [
+      {
+        label: translation.previewSearching,
+        value: plan.baseQuery
+      }
+    ];
+    if (plan.includeTerms.length) {
+      rows.push({
+        label: translation.previewInclude,
+        value: plan.includeTerms.join(" · ")
+      });
+    }
+    if (plan.excludeTerms.length) {
+      rows.push({
+        label: translation.previewExclude,
+        value: plan.excludeTerms.join(" · ")
+      });
+    }
+    if (plan.conditionFilter !== "any") {
+      rows.push({
+        label: translation.previewCondition,
+        value: translation[`condition_${plan.conditionFilter}`]
+      });
+    }
+    queryPreviewNode.innerHTML = `
+      <div class="query-preview-head">${escapeHtml(translation.queryPreviewLabel)}</div>
+      <div class="query-preview-rows">
+        ${rows.map((row) => `
+          <div class="query-preview-row">
+            <span class="query-preview-label">${escapeHtml(row.label)}</span>
+            <strong>${escapeHtml(localizeDynamicText(row.value, state.language))}</strong>
+          </div>
+        `).join("")}
+      </div>
+    `;
+  }
+
+  function renderSuggestions() {
+    const translation = t();
+    const suggestions = Array.isArray(state.response?.suggestions) ? state.response.suggestions : [];
+    const queryMatchesResponse = String(state.response?.query || "").trim() === String(state.query || "").trim();
+    if (!suggestions.length || state.loading || !queryMatchesResponse) {
+      suggestionsNode.innerHTML = "";
+      suggestionsNode.classList.remove("is-visible");
+      return;
+    }
+    const includeSuggestions = suggestions.filter((suggestion) => suggestion?.type !== "exclude");
+    const excludeSuggestions = suggestions.filter((suggestion) => suggestion?.type === "exclude");
+    suggestionsNode.classList.add("is-visible");
+    suggestionsNode.innerHTML = `
+      <div class="suggestion-strip-head">${escapeHtml(translation.suggestionsTitle)}</div>
+      <div class="suggestion-groups">
+        ${renderSuggestionGroup("include", includeSuggestions, translation)}
+        ${renderSuggestionGroup("exclude", excludeSuggestions, translation)}
+      </div>
+    `;
+  }
+
+  function renderSuggestionGroup(mode, suggestions, translation) {
+    if (!Array.isArray(suggestions) || !suggestions.length) {
+      return "";
+    }
+    const actionLabel = translation[`suggestion_${mode}`] || translation.addChip;
+    const label = mode === "exclude" ? translation.excludeTerms : translation.includeTerms;
+    return `
+      <section class="suggestion-group suggestion-group--${escapeHtml(mode)}">
+        <div class="suggestion-group-head">
+          <span class="suggestion-group-pill suggestion-group-pill--${escapeHtml(mode)}">${escapeHtml(actionLabel)}</span>
+          <strong>${escapeHtml(label)}</strong>
+        </div>
+        <div class="suggestion-chip-list">
+          ${suggestions.map((suggestion) => {
+            const reason = translation[`suggestionReason_${suggestion?.reason}`] || "";
+            return `
+              <button
+                class="suggestion-chip suggestion-chip--${escapeHtml(mode)}"
+                type="button"
+                data-suggestion-type="${escapeHtml(mode)}"
+                data-suggestion-label="${escapeHtml(suggestion?.label || "")}"
+                title="${escapeHtml(reason)}"
+              >
+                <span class="suggestion-chip-mode">${escapeHtml(actionLabel)}</span>
+                <span>${escapeHtml(localizeDynamicText(String(suggestion?.label || ""), state.language))}</span>
+              </button>
+            `;
+          }).join("")}
+        </div>
+      </section>
+    `;
+  }
+
+  function buildLocalQueryPlan() {
+    return {
+      baseQuery: String(state.query || "").trim(),
+      includeTerms: state.includeTerms,
+      excludeTerms: state.excludeTerms,
+      conditionFilter: state.conditionFilter
+    };
+  }
+
+  function handleChipInputKeydown(event, group) {
+    if (event.key !== "Enter" && event.key !== "," && event.key !== "،") {
+      return;
+    }
+    event.preventDefault();
+    commitChipInput(group);
+  }
+
+  function commitChipInput(group) {
+    const input = group === "include" ? includeInput : excludeInput;
+    const value = normalizeChipInputValue(input.value);
+    if (!value) {
+      input.value = "";
+      return;
+    }
+    input.value = "";
+    addChip(group, value);
+  }
+
+  function addChip(group, rawValue) {
+    const value = normalizeChipInputValue(rawValue);
+    if (!value) {
+      return;
+    }
+    const key = group === "include" ? "includeTerms" : "excludeTerms";
+    if (state[key].some((entry) => compareChipTerms(entry, value))) {
+      render();
+      return;
+    }
+    state[key] = [...state[key], value];
+    rerunSearchIfNeeded();
+    render();
+  }
+
+  function removeChip(group, index) {
+    const key = group === "include" ? "includeTerms" : "excludeTerms";
+    if (!Number.isFinite(index) || index < 0 || index >= state[key].length) {
+      return;
+    }
+    state[key] = state[key].filter((_term, termIndex) => termIndex !== index);
+    rerunSearchIfNeeded();
+    render();
+  }
+
+  function applySuggestion(group, value) {
+    if (group !== "exclude" && group !== "include") {
+      return;
+    }
+    addChip(group, value);
+  }
+
+  function rerunSearchIfNeeded() {
+    if (!String(state.query || "").trim()) {
+      return;
+    }
+    if (state.loading) {
+      state.pendingSearchRerun = true;
+      return;
+    }
+    if (!state.response?.ok) {
+      return;
+    }
+    runSearch().catch(() => {});
+  }
+
+  function clearAllFilters() {
+    if (!hasActiveFilters()) {
+      render();
+      return;
+    }
+    state.includeTerms = [];
+    state.excludeTerms = [];
+    state.conditionFilter = "any";
+    rerunSearchIfNeeded();
+    render();
   }
 
   function renderProviderBlocker() {
@@ -561,6 +1099,7 @@
         block: "nearest"
       });
     }
+    hydrateResultThumbnails();
   }
 
   function buildResultRowMarkup(provider, row) {
@@ -570,13 +1109,23 @@
     const localizedPrice = formatPriceCell(row.priceText, row.priceValue);
     const localizedOriginal = formatPriceCell(row.originalPriceText, row.originalPriceValue, { fallback: "—" });
     const localizedDiscount = localizeDynamicText(row.discountPercent || "—", state.language);
+    const duplicateMeta = Number(row.duplicateCount || 0) > 1
+      ? `<span class="result-meta-pill">${escapeHtml(formatString(translation.duplicateGroup, { count: String(row.duplicateCount) }))}</span>`
+      : "";
+    const thumbnailMarkup = row.imageUrl
+      ? `<div class="result-thumb"><img src="${escapeHtml(row.imageUrl)}" alt="" data-row-thumb loading="lazy" referrerpolicy="no-referrer"></div>`
+      : `<div class="result-thumb is-broken" aria-hidden="true"></div>`;
     return `
       <tr class="result-row ${active ? "is-active" : ""}" data-row-key="${escapeHtml(rowKey)}" title="${active ? escapeHtml(translation.activeRowHint) : ""}">
         <td class="col-provider-cell">${escapeHtml(siteLabelFor(provider, state.language))}</td>
         <td class="col-rank-cell"><span class="rank-pill">${escapeHtml(formatString(translation.rankPrefix, { rank: String(row.rank || 0) }))}</span></td>
         <td>
-          <div class="title-stack">
-            <strong>${escapeHtml(localizeDynamicText(row.title || translation.unknown, state.language))}</strong>
+          <div class="result-title-cell">
+            ${thumbnailMarkup}
+            <div class="title-stack">
+              <strong>${escapeHtml(localizeDynamicText(row.title || translation.unknown, state.language))}</strong>
+              ${duplicateMeta ? `<div class="title-meta-row">${duplicateMeta}</div>` : ""}
+            </div>
           </div>
         </td>
         <td class="col-price-cell price-value-cell">${escapeHtml(localizedPrice)}</td>
@@ -708,11 +1257,105 @@
       return;
     }
     state.maxResults = clamped;
-    if (state.response?.ok && String(state.query || "").trim()) {
+    if (String(state.query || "").trim() && (state.response?.ok || state.loading)) {
+      if (state.loading) {
+        state.pendingSearchRerun = true;
+        render();
+        return;
+      }
       runSearch().catch(() => {});
       return;
     }
     render();
+  }
+
+  function hydrateInitialQueryFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const query = String(params.get("q") || "").trim();
+    if (!query) {
+      return;
+    }
+    state.query = query;
+  }
+
+  function shouldAutorunFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("autorun") === "1" && Boolean(String(state.query || "").trim());
+  }
+
+  function buildSearchPayload() {
+    return {
+      query: String(state.query || "").trim(),
+      includeTerms: [...state.includeTerms],
+      excludeTerms: [...state.excludeTerms],
+      conditionFilter: state.conditionFilter,
+      dedupeEnabled: state.dedupeEnabled,
+      providers: [...state.selectedProviders],
+      maxResults: state.maxResults
+    };
+  }
+
+  function buildSearchSignature(payload) {
+    return JSON.stringify({
+      query: String(payload?.query || ""),
+      includeTerms: Array.isArray(payload?.includeTerms) ? payload.includeTerms : [],
+      excludeTerms: Array.isArray(payload?.excludeTerms) ? payload.excludeTerms : [],
+      conditionFilter: String(payload?.conditionFilter || "any"),
+      dedupeEnabled: Boolean(payload?.dedupeEnabled),
+      providers: Array.isArray(payload?.providers) ? payload.providers : [],
+      maxResults: clampMaxResults(payload?.maxResults)
+    });
+  }
+
+  async function notifyGlobalSearchTabOpened() {
+    try {
+      await chrome.runtime.sendMessage({
+        type: "RASHNU_GLOBAL_SEARCH_TAB_OPENED"
+      });
+    } catch (_error) {}
+  }
+
+  async function cycleLanguage() {
+    const nextLanguage = state.language === "fa" ? "en" : "fa";
+    await chrome.runtime.sendMessage({
+      type: "RASHNU_SET_LANGUAGE",
+      payload: { language: nextLanguage }
+    });
+  }
+
+  async function cycleThemeMode() {
+    const order = ["system", "dark", "light"];
+    const current = order.includes(state.themeMode) ? state.themeMode : "system";
+    const next = order[(order.indexOf(current) + 1) % order.length];
+    await chrome.runtime.sendMessage({
+      type: "RASHNU_SET_THEME_MODE",
+      payload: { themeMode: next }
+    });
+  }
+
+  function hydrateResultThumbnails() {
+    resultsBodyNode.querySelectorAll("[data-row-thumb]").forEach((image) => {
+      if (!(image instanceof HTMLImageElement) || image.dataset.bound === "true") {
+        return;
+      }
+      image.dataset.bound = "true";
+      const container = image.closest(".result-thumb");
+      const markLoaded = () => {
+        container?.classList.remove("is-broken");
+      };
+      const markBroken = () => {
+        container?.classList.add("is-broken");
+      };
+      if (image.complete) {
+        if (image.naturalWidth > 0) {
+          markLoaded();
+        } else {
+          markBroken();
+        }
+      }
+      image.addEventListener("load", markLoaded, { once: true });
+      image.addEventListener("error", markBroken, { once: true });
+    });
   }
 
   function moveSelection(delta) {
@@ -1006,12 +1649,41 @@
     return Math.max(1, Math.min(10, numeric));
   }
 
+  function normalizeChipInputValue(value) {
+    return globalThis.RashnuNormalize.normalizeWhitespace(
+      globalThis.RashnuNormalize.cleanProductTitle(String(value || "").replace(/[،,]+$/g, "")) || value
+    );
+  }
+
+  function compareChipTerms(left, right) {
+    return globalThis.RashnuNormalize.normalizeText(left) === globalThis.RashnuNormalize.normalizeText(right);
+  }
+
   function formatString(template, replacements) {
     return String(template || "").replace(/\{(\w+)\}/g, (_match, key) => replacements?.[key] ?? "");
   }
 
   function t() {
     return TRANSLATIONS[state.language] || TRANSLATIONS.fa;
+  }
+
+  function setTitleAndAria(node, value) {
+    if (!node) {
+      return;
+    }
+    node.setAttribute("title", value);
+    node.setAttribute("aria-label", value);
+  }
+
+  function themeIconFor(mode) {
+    switch (mode) {
+      case "dark":
+        return "☾";
+      case "light":
+        return "☀";
+      default:
+        return "◐";
+    }
   }
 
   function getEffectiveTheme(mode) {

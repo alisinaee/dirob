@@ -119,6 +119,12 @@
     ".x-price-approx__price span",
     ".display-price"
   ];
+  let pageContextCacheSerial = 0;
+  let pageContextCache = {
+    key: "",
+    context: null,
+    links: null
+  };
 
   function detectSite() {
     const host = location.hostname;
@@ -211,21 +217,94 @@
     return filtered;
   }
 
-  function getPageContext() {
-    const site = detectSite();
-    const isDetail = site !== "unsupported" && isProductDetailPage(site);
-    const isListing =
-      site !== "unsupported" &&
-      !isDetail &&
-      getProductLinks(site).length >= 3;
+  function buildCachedPageContextKey(site, pageUrl) {
+    return `${site}|${pageUrl}|${pageContextCacheSerial}`;
+  }
 
+  function buildBasePageContext() {
+    const site = detectSite();
+    const pageUrl = normalizeApi.canonicalizeUrl(location.href);
+    const pageTitle = document.title || "";
+    if (site === "unsupported") {
+      return {
+        site,
+        pageUrl,
+        pageTitle,
+        mode: "unsupported",
+        isSupported: false
+      };
+    }
+    if (isProductDetailPage(site)) {
+      return {
+        site,
+        pageUrl,
+        pageTitle,
+        mode: "detail",
+        isSupported: true
+      };
+    }
     return {
       site,
-      pageUrl: normalizeApi.canonicalizeUrl(location.href),
-      pageTitle: document.title || "",
-      mode: isDetail ? "detail" : isListing ? "listing" : "unsupported",
-      isSupported: isDetail || isListing
+      pageUrl,
+      pageTitle,
+      mode: "unsupported",
+      isSupported: false
     };
+  }
+
+  function resolveListingLinks(context, options = {}) {
+    if (!context || context.site === "unsupported" || context.mode === "detail") {
+      return [];
+    }
+    const cacheKey = buildCachedPageContextKey(context.site, context.pageUrl);
+    if (!options.forceRefresh && pageContextCache.key === cacheKey && Array.isArray(pageContextCache.links)) {
+      return pageContextCache.links;
+    }
+    const links = getProductLinks(context.site);
+    pageContextCache = {
+      key: cacheKey,
+      context: pageContextCache.context && pageContextCache.key === cacheKey ? pageContextCache.context : null,
+      links
+    };
+    return links;
+  }
+
+  function invalidatePageContextCache() {
+    pageContextCacheSerial += 1;
+    pageContextCache = {
+      key: "",
+      context: null,
+      links: null
+    };
+  }
+
+  function getPageContext(options = {}) {
+    const baseContext = buildBasePageContext();
+    if (baseContext.site === "unsupported" || baseContext.mode === "detail") {
+      return baseContext;
+    }
+
+    const cacheKey = buildCachedPageContextKey(baseContext.site, baseContext.pageUrl);
+    if (!options.forceRefresh && pageContextCache.key === cacheKey && pageContextCache.context) {
+      return {
+        ...pageContextCache.context,
+        pageTitle: baseContext.pageTitle
+      };
+    }
+
+    const links = resolveListingLinks(baseContext, options);
+    const isListing = links.length >= 3;
+    const nextContext = {
+      ...baseContext,
+      mode: isListing ? "listing" : "unsupported",
+      isSupported: isListing
+    };
+    pageContextCache = {
+      key: cacheKey,
+      context: nextContext,
+      links
+    };
+    return nextContext;
   }
 
   function textFromSelectors(root, selectors) {
@@ -433,19 +512,19 @@
     };
   }
 
-  function scanListingCards() {
-    const context = getPageContext();
-    if (!context.isSupported || context.mode !== "listing") {
+  function scanListingCards(context = null) {
+    const resolvedContext = context || getPageContext();
+    if (!resolvedContext.isSupported || resolvedContext.mode !== "listing") {
       return [];
     }
 
-    const links = getProductLinks(context.site);
+    const links = resolveListingLinks(resolvedContext);
     const records = [];
     const seenElements = new Set();
     let position = 0;
 
     for (const link of links) {
-      const container = findCardContainer(link, context.site);
+      const container = findCardContainer(link, resolvedContext.site);
       if (!isNodeRendered(container, { minWidth: 80, minHeight: 80 })) {
         continue;
       }
@@ -453,7 +532,7 @@
         continue;
       }
       seenElements.add(container);
-      const item = extractCardData(container, position, context.site);
+      const item = extractCardData(container, position, resolvedContext.site);
       if (!item) {
         continue;
       }
@@ -1873,21 +1952,22 @@
     return normalizeApi.normalizeWhitespace(node?.textContent || "");
   }
 
-  async function scanPageItems() {
-    const context = getPageContext();
-    if (!context.isSupported) {
+  async function scanPageItems(context = null) {
+    const resolvedContext = context || getPageContext();
+    if (!resolvedContext.isSupported) {
       return [];
     }
 
-    if (context.mode === "detail") {
-      return extractDetailItem(context.site);
+    if (resolvedContext.mode === "detail") {
+      return extractDetailItem(resolvedContext.site);
     }
 
-    return scanListingCards();
+    return scanListingCards(resolvedContext);
   }
 
   globalThis.RashnuListingExtractor = {
     getPageContext,
+    invalidatePageContextCache,
     scanListingCards,
     scanPageItems,
     extractCardData
