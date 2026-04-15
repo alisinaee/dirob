@@ -491,6 +491,9 @@
     if (linkCount < 1) {
       return false;
     }
+    if (site === "basalam" && countDistinctProductTargets(element, site) !== 1) {
+      return false;
+    }
     if (site !== "basalam" && linkCount > 5) {
       return false;
     }
@@ -498,6 +501,28 @@
     const hasImage = !!element.querySelector("img");
     const textLength = normalizeApi.normalizeWhitespace(element.textContent || "").length;
     return hasImage && textLength >= 15;
+  }
+
+  function countDistinctProductTargets(element, site) {
+    if (!(element instanceof Element)) {
+      return 0;
+    }
+    const linkSelector = LINK_SELECTORS[site];
+    if (!linkSelector) {
+      return 0;
+    }
+    const targets = new Set();
+    for (const link of element.querySelectorAll(linkSelector)) {
+      const href = normalizeApi.canonicalizeUrl(link.getAttribute("href"), location.href);
+      if (!href) {
+        continue;
+      }
+      targets.add(href);
+      if (targets.size > 1) {
+        return targets.size;
+      }
+    }
+    return targets.size;
   }
 
   function extractCardData(cardElement, position, site, preferredLink = null) {
