@@ -768,6 +768,8 @@
     if (!Array.isArray(queries)) {
       return null;
     }
+    const pathInfo = extractBasalamPathInfo(location.pathname || "");
+    const candidates = [];
     for (const queryEntry of queries) {
       const queryHash = String(queryEntry?.queryHash || "");
       if (!queryHash.startsWith("[\"pdp\",")) {
@@ -780,10 +782,83 @@
         data?.core ||
         null;
       if (product && typeof product === "object") {
-        return product;
+        candidates.push({
+          product,
+          queryHash
+        });
       }
     }
+    if (!candidates.length) {
+      return null;
+    }
+
+    if (pathInfo?.productId) {
+      const byId = candidates.find((entry) => {
+        const id = String(
+          entry?.product?.id ||
+          entry?.product?.productId ||
+          entry?.product?.product_id ||
+          ""
+        );
+        return id === pathInfo.productId;
+      });
+      if (byId?.product) {
+        return byId.product;
+      }
+    }
+
+    if (pathInfo?.vendorSlug) {
+      const byVendor = candidates.find((entry) => {
+        const queryHashParts = parseBasalamPdpQueryHash(entry?.queryHash || "");
+        return queryHashParts?.vendorSlug === pathInfo.vendorSlug;
+      });
+      if (byVendor?.product) {
+        return byVendor.product;
+      }
+    }
+
+    return candidates[candidates.length - 1]?.product || candidates[0]?.product || null;
+  }
+
+  function extractBasalamPathInfo(pathname) {
+    const path = String(pathname || "").trim();
+    if (!path) {
+      return null;
+    }
+    const vendorProductMatch = path.match(/^\/([^/]+)\/product\/(\d+)(?:[/?#]|$)/i);
+    if (vendorProductMatch) {
+      return {
+        vendorSlug: vendorProductMatch[1].toLowerCase(),
+        productId: vendorProductMatch[2]
+      };
+    }
+    const directProductMatch = path.match(/^\/product\/(\d+)(?:[/?#]|$)/i);
+    if (directProductMatch) {
+      return {
+        vendorSlug: "",
+        productId: directProductMatch[1]
+      };
+    }
     return null;
+  }
+
+  function parseBasalamPdpQueryHash(queryHash) {
+    const raw = String(queryHash || "").trim();
+    if (!raw.startsWith("[\"pdp\",")) {
+      return null;
+    }
+    try {
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed) || parsed.length < 2) {
+        return null;
+      }
+      return {
+        productId: String(parsed[1] ?? ""),
+        vendorSlug: String(parsed[2] || "").toLowerCase()
+      };
+    } catch (_error) {
+      return null;
+    }
   }
 
   function normalizeTechnolifeAssetUrl(value) {
