@@ -3169,7 +3169,9 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     const searchUrl = buildSearchUrlForSite("basalam", query);
     let directCandidates = [];
     let proxyCandidates = [];
+    let torobCandidates = [];
     let usedProxy = false;
+    let usedTorobOffersFallback = false;
     try {
       try {
         const html = await fetchTextWithRetry(searchUrl, {
@@ -3210,7 +3212,29 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
         }
       }
 
-      const mergedCandidates = directCandidates.length ? directCandidates : proxyCandidates;
+      if (item?.sourceSite === "torob") {
+        try {
+          torobCandidates = await fetchBasalamCandidatesFromTorobSource(item);
+          usedTorobOffersFallback = torobCandidates.length > 0;
+        } catch (torobFallbackError) {
+          if (!isRecoverableProviderFetchError(torobFallbackError)) {
+            throw torobFallbackError;
+          }
+          addLog("warn", "background", "provider_search_partial_fallback", {
+            sourceId: item.sourceId,
+            targetSite: "basalam",
+            query,
+            stage: "torob_offers",
+            reason: torobFallbackError?.message || "request_failed"
+          });
+        }
+      }
+
+      const mergedCandidates = mergeBasalamCandidatePools(
+        directCandidates,
+        proxyCandidates,
+        torobCandidates
+      );
       if (!mergedCandidates.length) {
         return buildProviderSearchFallbackResult(item, query, "basalam", "no_results");
       }
@@ -3248,7 +3272,9 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
               providerDebug: {
                 directCandidates: directCandidates.length,
                 proxyCandidates: proxyCandidates.length,
-                usedProxy
+                torobCandidates: torobCandidates.length,
+                usedProxy,
+                usedTorobOffersFallback
               },
               sourceItem: item
             }
@@ -3266,6 +3292,54 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       });
       return buildProviderSearchFallbackResult(item, query, "basalam", "network_unreachable");
     }
+  }
+
+  async function fetchBasalamCandidatesFromTorobSource(item) {
+    const sourceKey = extractTorobProductKeyFromItem(item);
+    if (!sourceKey) {
+      return [];
+    }
+    const detailsUrl = buildTorobBaseProductDetailsUrl(sourceKey);
+    const payload = await fetchJsonWithRetry(detailsUrl);
+    const offers = extractTorobBaseProductOffers(payload);
+    if (!offers.length) {
+      return [];
+    }
+
+    const basalamOffers = offers
+      .filter((offer) => isBasalamOfferShop(offer))
+      .slice(0, 4);
+    if (!basalamOffers.length) {
+      return [];
+    }
+
+    const candidatesByKey = new Map();
+    for (const offer of basalamOffers) {
+      const title = globalThis.RashnuNormalize.cleanProductTitle(
+        offer?.name1 || offer?.name2 || item?.title || ""
+      );
+      if (!title) {
+        continue;
+      }
+      const priceText = globalThis.RashnuNormalize.normalizeWhitespace(offer?.price_text || "");
+      const redirectUrl = globalThis.RashnuNormalize.canonicalizeUrl(
+        offer?.page_url || offer?.url || "",
+        "https://torob.com"
+      );
+      const basalamUrl = await resolveBasalamUrlFromTorobRedirect(redirectUrl);
+      if (!basalamUrl) {
+        continue;
+      }
+
+      const candidate = buildBasalamSearchCandidate({
+        title,
+        priceText: priceText || null,
+        targetUrl: basalamUrl
+      });
+      upsertBasalamSearchCandidate(candidatesByKey, candidate);
+    }
+
+    return Array.from(candidatesByKey.values()).slice(0, 12);
   }
 
   async function fetchMatchByTargetSite(targetSite, item, query) {
@@ -3763,6 +3837,16 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     return Array.from(candidatesByKey.values()).slice(0, 24);
   }
 
+  function mergeBasalamCandidatePools(...candidatePools) {
+    const candidatesByKey = new Map();
+    for (const pool of candidatePools) {
+      for (const candidate of pool || []) {
+        upsertBasalamSearchCandidate(candidatesByKey, candidate);
+      }
+    }
+    return Array.from(candidatesByKey.values()).slice(0, 24);
+  }
+
   function extractBasalamImageFromMarkdownLabel(label) {
     const match = String(label || "").match(/!\[[^\]]*\]\((https?:\/\/[^)\s]+)\)/i);
     return normalizeGlobalSearchImageUrl(match?.[1] || "");
@@ -3872,6 +3956,96 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       return sourceId;
     }
     return normalized.replace(/^https?:\/\/(?:www\.)?/i, "").toLowerCase();
+  }
+
+  function extractTorobProductKeyFromItem(item) {
+    const sourceId = String(item?.sourceId || "").trim();
+    const sourceIdMatch = sourceId.match(/^torob:([0-9a-f-]{16,})$/i);
+    if (sourceIdMatch?.[1]) {
+      return sourceIdMatch[1];
+    }
+
+    const productUrl = globalThis.RashnuNormalize.canonicalizeUrl(item?.productUrl || "", "https://torob.com");
+    const urlMatch = String(productUrl || "").match(/\/p\/([0-9a-f-]{16,})(?:[/?#]|$)/i);
+    return urlMatch?.[1] || null;
+  }
+
+  function buildTorobBaseProductDetailsUrl(productKey) {
+    const url = new URL("https://api.torob.com/v4/base-product/details/");
+    url.searchParams.set("source", "next_desktop");
+    url.searchParams.set("discover_method", "direct");
+    url.searchParams.set("prk", productKey);
+    return url.toString();
+  }
+
+  function extractTorobBaseProductOffers(payload) {
+    const root = payload && typeof payload === "object" ? payload : {};
+    const baseProduct =
+      (root.results && typeof root.results === "object" ? root.results.base_product : null) ||
+      root.base_product ||
+      root;
+    const productsInfo = baseProduct?.products_info;
+    const result = Array.isArray(productsInfo?.result)
+      ? productsInfo.result
+      : Array.isArray(productsInfo)
+        ? productsInfo
+        : [];
+    return result;
+  }
+
+  function isBasalamOfferShop(offer) {
+    const shopName = globalThis.RashnuNormalize.normalizeText(offer?.shop_name || "");
+    return shopName.includes("باسلام") || shopName.includes("basalam");
+  }
+
+  async function resolveBasalamUrlFromTorobRedirect(redirectUrl) {
+    if (!redirectUrl) {
+      return "";
+    }
+
+    let html = "";
+    try {
+      html = await fetchTextWithRetry(
+        redirectUrl,
+        {
+          headers: {
+            "accept-language": "fa-IR,fa;q=0.9,en;q=0.8"
+          }
+        }
+      );
+    } catch (_error) {
+      return "";
+    }
+
+    const redirectMatch =
+      html.match(/window\.location\.replace\(\s*"([^"]+)"\s*\)/i) ||
+      html.match(/window\.location\.href\s*=\s*"([^"]+)"/i) ||
+      html.match(/<a[^>]*href="([^"]+)"[^>]*>\s*اینجا\s*<\/a>/iu);
+    const rawRedirectTarget = decodeHtmlEntities(redirectMatch?.[1] || "").trim();
+    if (!rawRedirectTarget) {
+      return "";
+    }
+
+    const relayUrl = globalThis.RashnuNormalize.canonicalizeUrl(rawRedirectTarget, "https://basalam.com");
+    if (!relayUrl) {
+      return "";
+    }
+    let relayParsed;
+    try {
+      relayParsed = new URL(relayUrl);
+    } catch (_error) {
+      return "";
+    }
+
+    const directTarget =
+      relayParsed.searchParams.get("to") ||
+      relayParsed.searchParams.get("url") ||
+      relayParsed.searchParams.get("target");
+    const candidateTarget = globalThis.RashnuNormalize.canonicalizeUrl(directTarget || relayUrl, "https://basalam.com");
+    if (!candidateTarget || !/(?:^https?:\/\/(?:www\.)?basalam\.com\/)/i.test(candidateTarget)) {
+      return "";
+    }
+    return candidateTarget;
   }
 
   async function fetchMarketplaceProxyText(searchUrl, targetSite) {
