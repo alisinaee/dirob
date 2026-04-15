@@ -148,6 +148,7 @@
       status_error: "خطا",
       hiddenPrice: "نمایش داده نمی‌شود",
       unknown: "نامشخص",
+      unavailable: "ناموجود",
       noExact: "بدون تطابق قطعی",
       detailHint: "این صفحه جزئیات محصول است و همان محصول اصلی بررسی می‌شود.",
       listingHint: "این صفحه فهرست محصولات است و موارد قابل مشاهده بررسی می‌شوند.",
@@ -278,6 +279,7 @@
       status_error: "Error",
       hiddenPrice: "Hidden",
       unknown: "Unknown",
+      unavailable: "Unavailable",
       noExact: "No exact match",
       detailHint: "This is a product detail page. Rashnu is checking the main product.",
       listingHint: "This is a listing page. Rashnu is checking visible products.",
@@ -1102,9 +1104,7 @@
         const rawPriceText = isSource
           ? (item.displayPriceText || translation.unknown)
           : (siteMatch?.targetPriceText ||
-              (siteSearchEnabled && siteStatus === "loading"
-                ? translation.status_loading
-                : translation.unknown));
+              resolveTargetPriceFallback(siteMatch, siteSearchEnabled, translation));
         const priceText = localizeDynamicText(rawPriceText, language);
         const isLoadingPrice = !isSource && siteSearchEnabled && siteStatus === "loading";
         const priceMarkup = isLoadingPrice
@@ -1543,6 +1543,25 @@
       return "";
     }
     return `<div class="price-extra">${parts.join("")}</div>`;
+  }
+
+  function resolveTargetPriceFallback(siteMatch, siteSearchEnabled, translation) {
+    if (siteSearchEnabled && siteMatch?.status === "loading") {
+      return translation.status_loading;
+    }
+    if (!siteMatch) {
+      return translation.unknown;
+    }
+    if (siteMatch.status === "error") {
+      return translation.unknown;
+    }
+    if (siteMatch.status === "not_found") {
+      return translation.unavailable || translation.unknown;
+    }
+    if (siteMatch.status === "matched" || siteMatch.status === "low_confidence") {
+      return translation.unavailable || translation.unknown;
+    }
+    return translation.unknown;
   }
 
   function buildPriceSiteBadgeMarkup(language, siteLabel, iconUrl) {

@@ -137,6 +137,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
   const logEntries = [];
   const pendingLogEntries = [];
   let activeCount = 0;
+  let queueSequence = 0;
   let panelConnectionCount = 0;
   let panelActive = false;
   let debugEnabled = false;
@@ -1170,6 +1171,42 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     }
   }
 
+  function getQueueOrderValue(item) {
+    const position = Number(item?.position);
+    if (Number.isFinite(position) && position >= 0) {
+      return position;
+    }
+    const guideNumber = Number(item?.guideNumber);
+    if (Number.isFinite(guideNumber) && guideNumber > 0) {
+      return guideNumber - 1;
+    }
+    return Number.MAX_SAFE_INTEGER;
+  }
+
+  function buildQueuePriority(item, isManual) {
+    const baseOrder = getQueueOrderValue(item);
+    return (isManual ? -1_000_000 : 0) + baseOrder;
+  }
+
+  function compareQueueJobs(left, right) {
+    const leftPriority = Number(left?.priority);
+    const rightPriority = Number(right?.priority);
+    const leftValue = Number.isFinite(leftPriority) ? leftPriority : Number.MAX_SAFE_INTEGER;
+    const rightValue = Number.isFinite(rightPriority) ? rightPriority : Number.MAX_SAFE_INTEGER;
+    if (leftValue !== rightValue) {
+      return leftValue - rightValue;
+    }
+    const leftSequence = Number(left?.queuedAt);
+    const rightSequence = Number(right?.queuedAt);
+    const leftOrder = Number.isFinite(leftSequence) ? leftSequence : Number.MAX_SAFE_INTEGER;
+    const rightOrder = Number.isFinite(rightSequence) ? rightSequence : Number.MAX_SAFE_INTEGER;
+    return leftOrder - rightOrder;
+  }
+
+  function resortQueue() {
+    queue.sort(compareQueueJobs);
+  }
+
   async function refreshMatchesForEnabledProviders() {
     for (const [tabId, state] of tabStates.entries()) {
       for (const row of state.rows.values()) {
@@ -1312,6 +1349,11 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     const queued = queuedQueries.get(queryKey);
     if (queued) {
       queued.listeners.push({ tabId, sourceId: item.sourceId, item });
+      const nextPriority = buildQueuePriority(item, isManual);
+      if (nextPriority < queued.priority) {
+        queued.priority = nextPriority;
+        resortQueue();
+      }
       return;
     }
 
@@ -1324,15 +1366,19 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       fallbackSites,
       isManual,
       pageKey: state.pageKey,
+      priority: buildQueuePriority(item, isManual),
+      queuedAt: ++queueSequence,
       listeners: [{ tabId, sourceId: item.sourceId, item }]
     };
     queue.push(job);
+    resortQueue();
     queuedQueries.set(queryKey, job);
     addLog("debug", "background", "queue_match", {
       tabId,
       sourceId: item.sourceId,
       targetSite,
-      queueLength: queue.length
+      queueLength: queue.length,
+      priority: job.priority
     });
     drainQueue();
   }
@@ -3101,6 +3147,110 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     }
   }
 
+  async function fetchBasalamMatch(item, query) {
+    const startedAt = Date.now();
+    const searchUrl = buildSearchUrlForSite("basalam", query);
+    let directCandidates = [];
+    let proxyCandidates = [];
+    let usedProxy = false;
+    try {
+      try {
+        const html = await fetchTextWithRetry(searchUrl, {
+          headers: {
+            "accept-language": "fa-IR,fa;q=0.9,en;q=0.8"
+          }
+        });
+        directCandidates = extractBasalamSearchCandidatesFromHtml(html).slice(0, 24);
+      } catch (directError) {
+        if (!isRecoverableProviderFetchError(directError)) {
+          throw directError;
+        }
+        addLog("warn", "background", "provider_search_partial_fallback", {
+          sourceId: item.sourceId,
+          targetSite: "basalam",
+          query,
+          stage: "search_html",
+          reason: directError?.message || "request_failed"
+        });
+      }
+
+      if (!directCandidates.length) {
+        usedProxy = true;
+        try {
+          const proxyText = await fetchMarketplaceProxyText(searchUrl, "basalam");
+          proxyCandidates = extractBasalamSearchCandidatesFromMarkdown(proxyText).slice(0, 24);
+        } catch (proxyError) {
+          if (!isRecoverableProviderFetchError(proxyError)) {
+            throw proxyError;
+          }
+          addLog("warn", "background", "marketplace_proxy_failed", {
+            sourceId: item.sourceId,
+            targetSite: "basalam",
+            query,
+            reason: proxyError?.message || "request_failed"
+          });
+          proxyCandidates = [];
+        }
+      }
+
+      const mergedCandidates = directCandidates.length ? directCandidates : proxyCandidates;
+      if (!mergedCandidates.length) {
+        return buildProviderSearchFallbackResult(item, query, "basalam", "no_results");
+      }
+
+      const ranked = globalThis.RashnuMatch.rankCandidates(item, mergedCandidates.slice(0, 18));
+      const classification = globalThis.RashnuMatch.classifyTopCandidate(ranked);
+      const top = ranked[0] || null;
+      const topWithPrice = ranked.find((candidate) => hasMeaningfulValue(candidate?.priceText || candidate?.price)) || top;
+      const targetPriceValue =
+        topWithPrice?.price ??
+        globalThis.RashnuNormalize.parsePriceValue(topWithPrice?.priceText || "");
+
+      return {
+        sourceSite: item.sourceSite,
+        targetSite: "basalam",
+        query,
+        status: classification.status,
+        confidence: top?.confidence ?? 0,
+        matchedTitle: top?.title || null,
+        targetPriceText: topWithPrice?.priceText || null,
+        targetPriceValue: Number.isFinite(targetPriceValue) ? targetPriceValue : null,
+        targetOriginalPriceText: null,
+        targetOriginalPriceValue: null,
+        targetDiscountPercent: null,
+        targetUrl: top?.targetUrl || topWithPrice?.targetUrl || searchUrl,
+        moreInfoUrl: null,
+        sellerCount: null,
+        reason: classification.reason,
+        searchUrl,
+        googleUrl: globalThis.RashnuNormalize.buildGoogleSearchUrl(item.title),
+        debug: debugEnabled
+          ? {
+              requestDurationMs: Date.now() - startedAt,
+              topCandidates: ranked.slice(0, 5).map(serializeCandidateDebug),
+              providerDebug: {
+                directCandidates: directCandidates.length,
+                proxyCandidates: proxyCandidates.length,
+                usedProxy
+              },
+              sourceItem: item
+            }
+          : null
+      };
+    } catch (error) {
+      if (!isRecoverableProviderFetchError(error)) {
+        throw error;
+      }
+      addLog("warn", "background", "provider_search_fallback", {
+        sourceId: item.sourceId,
+        targetSite: "basalam",
+        query,
+        reason: error?.message || "request_failed"
+      });
+      return buildProviderSearchFallbackResult(item, query, "basalam", "network_unreachable");
+    }
+  }
+
   async function fetchMatchByTargetSite(targetSite, item, query) {
     if (targetSite === "torob") {
       return fetchTorobMatch(item, query);
@@ -3122,6 +3272,9 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     }
     if (targetSite === "ebay") {
       return fetchEbayMatch(item, query);
+    }
+    if (targetSite === "basalam") {
+      return fetchBasalamMatch(item, query);
     }
     throw new Error(`unsupported_target_site:${targetSite}`);
   }

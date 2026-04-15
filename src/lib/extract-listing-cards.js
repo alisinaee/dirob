@@ -207,7 +207,13 @@
 
     for (const link of links) {
       if (!isNodeRendered(link, { minWidth: 2, minHeight: 2 })) {
-        continue;
+        if (site !== "basalam") {
+          continue;
+        }
+        const fallbackContainer = findCardContainer(link, site);
+        if (!isNodeRendered(fallbackContainer, { minWidth: 80, minHeight: 80 })) {
+          continue;
+        }
       }
       const href = normalizeApi.canonicalizeUrl(link.getAttribute("href"), location.href);
       if (!href) {
@@ -552,9 +558,9 @@
     }
 
     const links = resolveListingLinks(resolvedContext);
-    const records = [];
+    const recordsBySourceId = new Map();
+    const orderedSourceIds = [];
     const seenElements = new Set();
-    const seenSourceIds = new Set();
     let position = 0;
 
     for (const link of links) {
@@ -570,18 +576,71 @@
       if (!item) {
         continue;
       }
-      if (seenSourceIds.has(item.sourceId)) {
+      const existingRecord = recordsBySourceId.get(item.sourceId);
+      if (!existingRecord) {
+        recordsBySourceId.set(item.sourceId, {
+          element: container,
+          item
+        });
+        orderedSourceIds.push(item.sourceId);
+        position += 1;
         continue;
       }
-      seenSourceIds.add(item.sourceId);
-      records.push({
-        element: container,
-        item
-      });
-      position += 1;
+
+      if (shouldPreferRecordContainer(existingRecord.element, container)) {
+        recordsBySourceId.set(item.sourceId, {
+          element: container,
+          item: {
+            ...item,
+            position: existingRecord.item.position,
+            guideNumber: existingRecord.item.guideNumber
+          }
+        });
+      }
     }
 
+    const records = orderedSourceIds
+      .map((sourceId, index) => {
+        const record = recordsBySourceId.get(sourceId);
+        if (!record?.item) {
+          return null;
+        }
+        return {
+          element: record.element,
+          item: {
+            ...record.item,
+            position: index,
+            guideNumber: index + 1
+          }
+        };
+      })
+      .filter(Boolean);
+
     return records;
+  }
+
+  function shouldPreferRecordContainer(currentElement, candidateElement) {
+    const currentScore = scoreContainerElement(currentElement);
+    const candidateScore = scoreContainerElement(candidateElement);
+    return candidateScore > currentScore;
+  }
+
+  function scoreContainerElement(element) {
+    if (!(element instanceof Element)) {
+      return -1;
+    }
+    const rect = element.getBoundingClientRect();
+    const width = Math.max(0, rect.width || 0);
+    const height = Math.max(0, rect.height || 0);
+    const area = width * height;
+    const viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
+    const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+    const visibleWidth = Math.max(0, Math.min(rect.right, viewportWidth) - Math.max(rect.left, 0));
+    const visibleHeight = Math.max(0, Math.min(rect.bottom, viewportHeight) - Math.max(rect.top, 0));
+    const visibleArea = visibleWidth * visibleHeight;
+    const inViewport = visibleArea > 1600 ? 1 : 0;
+    const topBias = Number.isFinite(rect.top) ? Math.max(0, 10000 - Math.min(10000, Math.round(rect.top))) : 0;
+    return inViewport * 1_000_000_000 + visibleArea * 1000 + area + topBias;
   }
 
   function textFromDocument(selectors) {

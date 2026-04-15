@@ -184,7 +184,7 @@
       hostPatterns: ["basalam.com"],
       searchButtonSupported: true,
       sourcePageSupported: true,
-      matchSupported: false,
+      matchSupported: true,
       globalSearchSupported: true,
       searchEnabledDefault: true,
       priceVisibleDefault: true
