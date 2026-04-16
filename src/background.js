@@ -1200,9 +1200,10 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     return Number.MAX_SAFE_INTEGER;
   }
 
-  function buildQueuePriority(item, isManual) {
+  function buildQueuePriority(item, options = {}) {
     const baseOrder = getQueueOrderValue(item);
-    return (isManual ? -1_000_000 : 0) + baseOrder;
+    const highPriority = Boolean(options?.highPriority);
+    return (highPriority ? -1_000_000 : 0) + baseOrder;
   }
 
   function compareQueueJobs(left, right) {
@@ -1259,6 +1260,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     const state = stateOverride || ensureTabState(tabId);
     const row = state.rows.get(item.sourceId);
     const isManual = Boolean(options?.bustCache);
+    const isHighPriority = Boolean(options?.highPriority);
     const query = buildCleanMatchQuery(item);
     const queryKey = `${item.sourceSite}:${targetSites.join(",")}:${globalThis.RashnuNormalize.normalizeText(query)}`;
 
@@ -1366,7 +1368,9 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     const queued = queuedQueries.get(queryKey);
     if (queued) {
       queued.listeners.push({ tabId, sourceId: item.sourceId, item });
-      const nextPriority = buildQueuePriority(item, isManual);
+      const nextPriority = buildQueuePriority(item, {
+        highPriority: isHighPriority
+      });
       if (nextPriority < queued.priority) {
         queued.priority = nextPriority;
         resortQueue();
@@ -1383,7 +1387,9 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       fallbackSites,
       isManual,
       pageKey: state.pageKey,
-      priority: buildQueuePriority(item, isManual),
+      priority: buildQueuePriority(item, {
+        highPriority: isHighPriority
+      }),
       queuedAt: ++queueSequence,
       listeners: [{ tabId, sourceId: item.sourceId, item }]
     };
@@ -4317,11 +4323,29 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       priceInfo?.original_price ||
       priceInfo?.discounted_rrp_price ||
       null;
+    const rawDiscountAmount =
+      priceInfo?.discount_amount ||
+      priceInfo?.discount_value ||
+      priceInfo?.discount?.amount ||
+      product?.default_variant?.discount?.amount ||
+      null;
     const price = normalizeDigikalaApiPrice(rawPrice);
-    const originalPrice = normalizeDigikalaApiPrice(rawOriginalPrice);
+    const discountAmount = normalizeDigikalaApiPrice(rawDiscountAmount);
+    let originalPrice = normalizeDigikalaApiPrice(rawOriginalPrice);
+    if (!Number.isFinite(originalPrice) && Number.isFinite(price) && Number.isFinite(discountAmount) && discountAmount > 0) {
+      originalPrice = price + discountAmount;
+    }
+    const rawDiscountPercent =
+      priceInfo?.discount_percent ||
+      priceInfo?.discount?.percent ||
+      product?.default_variant?.price?.discount_percent ||
+      product?.default_variant?.discount?.percent ||
+      product?.default_variant?.discount_percent ||
+      product?.discount_percent ||
+      null;
     const discountPercent =
       normalizeDiscountPercent(
-        priceInfo?.discount_percent ||
+        rawDiscountPercent ||
           (Number.isFinite(price) && Number.isFinite(originalPrice) && originalPrice > price
             ? Math.round(((originalPrice - price) / originalPrice) * 100)
             : null)
@@ -5617,7 +5641,8 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       force: true
     });
     queueMatchRequest(activeTab.id, row.item, {
-      bustCache: true
+      bustCache: true,
+      highPriority: true
     }, state);
     addLog("info", "background", "reload_item", {
       tabId: activeTab.id,

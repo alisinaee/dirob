@@ -1,0 +1,29 @@
+{
+  "file_hashes": {
+    "scripts/check_saved_site_extraction.py": "77859edabc066de37dd4ffee8f47170396882b6060677853ebb65b5aa0c8603d",
+    "scripts/rashnu_log_helper.py": "355717700b8a496196a844ed9bbcf7b2c00abe64ab5ece84142d2870c809654f",
+    "scripts/run_no_vpn_recheck.sh": "e2c89568b05ec4332cdd2d4d9f0b8b94031f2e7a0a15497461036bd4ec2444a5",
+    "scripts/test_page_context_smoke.js": "6d6d98f662603ade292759ad65e369b1b7ae8a010701d01a00bc580e465f3b60",
+    "scripts/test_repos_no_vpn.py": "455fd8bcc510959e2aa2c2b48ee25f92d663b9c2cc429dc0b4a74fd253c25cbc",
+    "src/background.js": "c18039569e3e317a93994a610ba7e0f027bba08081bb1b8dea4b230b5a53a0db",
+    "src/content.js": "0b29501e3074870f06ead99785094813af0a06416674ee28e356ec0723260a19",
+    "src/help/help.js": "b497d889ec354a0a1b0a463d1413fb42ce89feefc70094b9f751738591fd5a2f",
+    "src/lib/extract-listing-cards.js": "2fc298916d20e4c5816db44d5dcf3beba8222b5fc95e61d6992be457872dfac6",
+    "src/lib/logger.js": "0fdfe524e537bed0e29e7abaf41870d359b4707dc6c7c4d205ba4a1fb9e3da02",
+    "src/lib/match.js": "e6d84a0d773a8923e4277a83a0d46f8f16edd0148e5aff6399290fd2aed60080",
+    "src/lib/normalize.js": "bbc796d5bc08b94cc9e115264bee8c9dbb0276c78566437c3fc76c95b6c68a4e",
+    "src/panel/panel.js": "fb88580dd11340393abcdca272c917352da74c191660cbc0d72782001f6729bf",
+    "src/popup/popup.js": "1c6a95c681a864303b9836923cb33e4f7cb696622eb5d8ecc4d157e8c2c8017f",
+    "src/search/search.js": "67c63dec29829414bc855101b9cc0cd54e22437d46cfd5b2e683b7baad7ed043",
+    "src/sidebar.js": "2899a2f3b7d8fcc3138c58c26cf1b32f7ae247b1dbd1dbc6359efc688d624577"
+  },
+  "indexed_at_commit": "9b973bd9e4cc5388db9f569202d5bee1ee990644",
+  "indexed_at_timestamp": "2026-04-16T03:42:40.999935+00:00",
+  "schema_version": 3,
+  "stats": {
+    "total_edges": 1287,
+    "total_files": 16,
+    "total_nodes": 635
+  },
+  "vexp_version": "2.0.4"
+}

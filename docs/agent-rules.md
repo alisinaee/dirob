@@ -6,22 +6,46 @@
 
 ## Behavior Rules
 - Keep this file concise and clear for AI agents.
+- Read `docs/agent-rules.md` at the start of each chat before broad project scans.
 - Update this file after assistant turns that edit repo-tracked files.
+- Run `./scripts/sync-agent-docs.sh` after structural repo changes to keep memory current.
 - Capture new user behavior instructions as short imperative rules.
 - Skip updates when there are no file edits and no new behavior instructions.
 - Retain only the latest 20 change entries.
+- Prefer repo-native project memory for cross-chat context: `docs/agent-rules.md` + `docs/project-memory/*`.
+- Prefer `vexp` capsules/impact/flow for scoped code context before broad repo scans.
 - Support general Digikala listing pages; do not limit the MVP to phone pages only.
 - Reuse researched repo logic as reference material instead of starting from zero.
 - Use a real Chrome side panel instead of a popup when presenting Rashnu.
 - Support reverse comparison on Torob pages by showing Digikala results.
-- Ensure we need to gather all logs from this rashnu so you can find the issue bugs or other things by read that file to know and fix them.
 - Ensure not loaded images should just show a minimal icon.
 - Ensure rashnu should work on Torob and Digikala product detail pages too.
-- Ensure top reload should work without refreshing the page.
-- Treat the top reload as a safe in-panel Rashnu rebuild; do not call `chrome.runtime.reload()` from the side panel because Chrome may refuse to reopen it.
-- Ensure changing lang should not require refreshing.
 
 ## Recent Changes (Last 20)
+### 2026-04-16T08:08:43+03:30
+- Changed files: `src/background.js`, `src/lib/extract-listing-cards.js`, `src/panel/panel.js`, `src/panel/panel.css`
+- Summary: Improved queue prioritization for single-item reloads, hardened Digikala discount/original-price extraction, and moved locate/reload controls beside guide number in panel cards.
+- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
+<!-- fingerprint:ae2e64fa3e1a -->
+
+### 2026-04-16T07:25:15+03:30
+- Changed files: `README.md`, `src/help/help.html`, `src/help/help.js`, `src/panel/panel.css`, `src/panel/panel.html`, `src/panel/panel.js`
+- Summary: Added agent preflight and conditional auto-docs sync scripts plus README workflow for docs-first + vexp context usage.
+- Behavior impact: Recorded code-level deltas for future AI context.
+<!-- fingerprint:70161d4c6d14 -->
+
+### 2026-04-16T07:14:30+03:30
+- Changed files: `README.md`, `scripts/setup-vexp.sh`, `docs/project-memory/chat-summaries.md`, `docs/project-memory/work-log.md`, `docs/project-memory/decisions.md`
+- Summary: Enabled `vexp` project workflow with setup helper script, documented capsule-based context usage, and recorded memory entries for installation and operation.
+- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
+<!-- fingerprint:c1457b72c3cf -->
+
+### 2026-04-16T07:02:21+03:30
+- Changed files: `docs/project-memory/README.md`, `docs/project-memory/chat-summaries.md`, `docs/project-memory/bug-log.md`, `docs/project-memory/work-log.md`, `docs/project-memory/decisions.md`
+- Summary: Added repo-native persistent memory files for chat summaries, bug tracking, work history, and decisions; switched preferred cross-chat memory source to in-repo docs.
+- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
+<!-- fingerprint:c9bf9e37a731 -->
+
 ### 2026-04-14T10:09:22+03:30
 - Changed files: `src/lib/extract-listing-cards.js`, `scripts/test_page_context_smoke.js`
 - Summary: Improved Basalam listing stability: support /product/<id> detail URLs, lower Basalam listing detection threshold to one product link, filter non-product Basalam links, and dedupe listing records by sourceId before guide assignment to prevent guide-number drift from repeated carousel cards.
@@ -118,29 +142,5 @@
 - Behavior impact: Recorded code-level deltas for future AI context.
 <!-- fingerprint:d6c5f0f7472b -->
 
-### 2026-04-13T21:03:00+03:30
-- Changed files: `src/search/search.html`, `src/search/search.css`
-- Summary: Moved the global search advanced mode control into the settings header action row as a compact pill switch beside language and theme controls.
-- Behavior impact: Recorded code-level deltas for future AI context.
-<!-- fingerprint:1e028ab64f8c -->
-
-### 2026-04-13T19:46:59+03:30
-- Changed files: `src/panel/panel.css`, `src/search/search.css`, `src/help/help.css`, `src/popup/popup.html`
-- Summary: Switched extension UI typography to a mixed-script font stack so Persian text always uses Vazir glyphs even when the interface language is English.
-- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
-<!-- fingerprint:8ec28b414142 -->
-
-### 2026-04-13T19:44:47+03:30
-- Changed files: `src/background.js`, `src/panel/panel.js`, `src/panel/panel.css`, `src/search/search.js`, `src/search/search.css`, `src/search/search.html`
-- Summary: Added real provider launcher icons on search UI, animated loading states, Divar city visibility rules, panel scroll position persistence, stronger search query heading, safer price sorting for unknown prices, and background rescan log noise suppression.
-- Behavior impact: Recorded code-level deltas for future AI context.
-<!-- fingerprint:33e84b309647 -->
-
-### 2026-04-13T18:24:00+03:30
-- Changed files: `src/background.js`, `src/panel/panel.js`
-- Summary: Replaced the side-panel runtime-reload experiment with a safe in-panel Rashnu hard refresh that force-rescans the active tab and only falls back to a tab reload if the content script is unresponsive, so the first top-button click no longer kills the panel.
-- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
-<!-- fingerprint:f5f23658f7be -->
-
 ## Last Updated
-- 2026-04-14T10:09:22+03:30
+- 2026-04-16T08:08:43+03:30

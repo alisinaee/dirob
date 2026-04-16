@@ -1227,7 +1227,19 @@ html[dir="rtl"] .provider-settings-heading {
   gap: 6px;
   flex-wrap: wrap;
   margin-bottom: 6px;
-  padding-inline-end: calc(var(--tool-size) * 2 + 22px);
+  padding-inline-end: 0;
+}
+
+.item-tool--meta {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+}
+
+.item-tool--meta svg,
+.item-tool--meta .action-symbol {
+  width: 13px;
+  height: 13px;
 }
 
 .item-card.is-visible {
@@ -1481,6 +1493,19 @@ html[dir="rtl"] .provider-settings-heading {
   min-width: 0;
 }
 
+.price-box--heat {
+  --price-heat-hue: calc(120 - (var(--price-heat-rank, 0) * 120));
+  --price-heat-color: hsl(var(--price-heat-hue) 76% 52% / 0.56);
+  background: color-mix(in srgb, var(--panel-alt) 86%, var(--price-heat-color) 14%);
+  border: 1px solid color-mix(in srgb, transparent 72%, var(--price-heat-color) 28%);
+}
+
+:root[data-theme="light"] .price-box--heat {
+  --price-heat-color: hsl(var(--price-heat-hue) 78% 44% / 0.42);
+  background: color-mix(in srgb, var(--panel-alt) 90%, var(--price-heat-color) 10%);
+  border-color: color-mix(in srgb, transparent 76%, var(--price-heat-color) 24%);
+}
+
 .price-box--link {
   display: block;
   text-decoration: none;
@@ -1489,6 +1514,14 @@ html[dir="rtl"] .provider-settings-heading {
 
 .price-box--link:hover {
   background: color-mix(in srgb, var(--panel-alt) 84%, var(--brand) 16%);
+}
+
+.price-box--link.price-box--heat:hover {
+  background: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--panel-alt) 84%, var(--brand) 16%) 86%,
+    var(--price-heat-color) 14%
+  );
 }
 
 .price-main {

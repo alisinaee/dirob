@@ -30,6 +30,54 @@ Use this when the extension is not from Chrome Web Store.
 
 ## Development
 
+### Agent Context Workflow (Low Token Burn)
+
+Use this sequence for every chat/task:
+
+1. Read current project memory first:
+
+```bash
+./scripts/agent-preflight.sh
+```
+
+2. Use `vexp` for targeted code context (instead of broad scans):
+
+```bash
+vexp capsule "top reload side panel refresh" --max-tokens 1800
+vexp impact "refreshState"
+```
+
+3. After repo-tracked edits, sync agent docs:
+
+```bash
+./scripts/sync-agent-docs.sh --summary "Short summary of this change"
+```
+
+If you need to persist new behavior constraints from a chat message:
+
+```bash
+./scripts/sync-agent-docs.sh --user-message "Agents must read docs before scanning the repo."
+```
+
+### AI Context With vexp
+
+Use this to reduce agent token usage by providing dependency-graph capsules instead of broad repo scans.
+
+Setup (repo-local):
+
+```bash
+./scripts/setup-vexp.sh
+```
+
+Useful commands:
+
+```bash
+vexp capsule "top reload side panel refresh" --max-tokens 1800
+vexp impact "refreshState"
+vexp flow "render" "refreshState"
+vexp savings
+```
+
 ### Logger Setup (Recommended)
 
 macOS one-time auto-start setup:

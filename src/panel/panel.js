@@ -25,6 +25,7 @@
   const selectionButton = document.querySelector('[data-action="toggle-selection"]');
   const syncPageViewButton = document.querySelector('[data-action="toggle-sync-page-view"]');
   const minimalViewButton = document.querySelector('[data-action="toggle-minimal-view"]');
+  const priceHeatColorsButton = document.querySelector('[data-action="toggle-price-heat-colors"]');
   const debugButton = document.querySelector('[data-action="toggle-debug"]');
   const languageButton = document.querySelector('[data-action="toggle-language"]');
   const autoLogsButton = document.querySelector('[data-action="toggle-auto-logs"]');
@@ -39,6 +40,7 @@
     selection: document.querySelector('[data-switch-label="selection"]'),
     syncPageView: document.querySelector('[data-switch-label="sync-page-view"]'),
     minimalView: document.querySelector('[data-switch-label="minimal-view"]'),
+    priceHeatColors: document.querySelector('[data-switch-label="price-heat-colors"]'),
     debug: document.querySelector('[data-switch-label="debug"]'),
     autoLogs: document.querySelector('[data-switch-label="auto-logs"]'),
     guideNumbers: document.querySelector('[data-switch-label="guide-numbers"]')
@@ -101,6 +103,7 @@
       syncPageView: "همگام با دید صفحه",
       minimalView: "نمای مینیمال",
       guideNumbers: "شماره راهنما",
+      priceHeatColors: "رنگ مقایسه قیمت",
       autoLogs: "ثبت خودکار لاگ",
       providerSearchSection: "دکمه‌های جست‌وجو",
       providerPriceSection: "نمایش قیمت",
@@ -179,6 +182,8 @@
         "کارت‌ها فشرده می‌شوند و دکمه‌های هر آیتم به حالت آیکونی نمایش داده می‌شود تا فضای کمتری بگیرد.",
       guideNumbersHint:
         "شماره راهنما کنار محصولات روی صفحه و داخل پنل نمایش داده می‌شود تا تطبیق آیتم‌ها ساده باشد.",
+      priceHeatColorsHint:
+        "کمترین قیمت هر کارت سبز و بیشترین قیمت قرمز کم‌رنگ می‌شود تا مقایسه سریع‌تر باشد.",
       autoLogsHint: "وقایع توسعه Rashnu به لاگ محلی ارسال می‌شود (فقط وقتی دیباگ روشن است).",
       autoLogsHintDebugOff: "برای فعال شدن ثبت خودکار لاگ، اول دیباگ را روشن کنید.",
       debugHint: "اطلاعات تشخیصی بیشتری برای هر آیتم نمایش داده می‌شود.",
@@ -232,6 +237,7 @@
       syncPageView: "Sync Page View",
       minimalView: "Minimal View",
       guideNumbers: "Guide Numbers",
+      priceHeatColors: "Price Heat Colors",
       autoLogs: "Auto Logs",
       providerSearchSection: "Search Buttons",
       providerPriceSection: "Show Prices",
@@ -310,6 +316,8 @@
         "Compacts cards and switches per-item actions to icon buttons to save vertical space.",
       guideNumbersHint:
         "Shows matching guide numbers on the page and in the panel so items are easier to correlate.",
+      priceHeatColorsHint:
+        "Tint price boxes from lowest (light green) to highest (light red) within each card.",
       autoLogsHint: "Send Rashnu development events to local logs (only while Debug is enabled).",
       autoLogsHintDebugOff: "Enable Debug first to use auto logging.",
       debugHint: "Show extra diagnostic details for each item.",
@@ -543,6 +551,15 @@
       const enabled = !Boolean(currentState?.guideNumbersEnabled);
       await sendRuntimeMessage({
         type: "RASHNU_SET_GUIDE_NUMBERS",
+        payload: { enabled }
+      });
+      await refreshState();
+    });
+
+    priceHeatColorsButton.addEventListener("click", async () => {
+      const enabled = !Boolean(currentState?.priceHeatColorsEnabled);
+      await sendRuntimeMessage({
+        type: "RASHNU_SET_PRICE_HEAT_COLORS",
         payload: { enabled }
       });
       await refreshState();
@@ -834,6 +851,7 @@
     switchLabels.selection.textContent = translation.elementSelect;
     switchLabels.syncPageView.textContent = translation.syncPageView;
     switchLabels.minimalView.textContent = translation.minimalView;
+    switchLabels.priceHeatColors.textContent = translation.priceHeatColors;
     switchLabels.debug.textContent = translation.debug;
     switchLabels.autoLogs.textContent = translation.autoLogs;
     switchLabels.guideNumbers.textContent = translation.guideNumbers;
@@ -867,6 +885,7 @@
     setTitleAndAria(syncPageViewButton, translation.syncPageViewHint);
     setTitleAndAria(minimalViewButton, translation.minimalViewHint);
     setTitleAndAria(guideNumbersButton, translation.guideNumbersHint);
+    setTitleAndAria(priceHeatColorsButton, translation.priceHeatColorsHint);
     setTitleAndAria(
       autoLogsButton,
       state?.debugEnabled ? translation.autoLogsHint : translation.autoLogsHintDebugOff
@@ -898,6 +917,8 @@
     autoLogsButton.setAttribute("aria-disabled", String(!Boolean(state?.debugEnabled)));
     guideNumbersButton.classList.toggle("is-active", Boolean(state?.guideNumbersEnabled));
     guideNumbersButton.setAttribute("aria-pressed", String(Boolean(state?.guideNumbersEnabled)));
+    priceHeatColorsButton.classList.toggle("is-active", Boolean(state?.priceHeatColorsEnabled));
+    priceHeatColorsButton.setAttribute("aria-pressed", String(Boolean(state?.priceHeatColorsEnabled)));
     for (const button of providerSearchButtons) {
       const provider = String(button.getAttribute("data-provider") || "");
       const enabled = isProviderSearchEnabled(state, provider);
@@ -945,6 +966,7 @@
       selectionModeEnabled: Boolean(state?.selectionModeEnabled),
       syncPageViewEnabled: Boolean(state?.syncPageViewEnabled),
       guideNumbersEnabled: Boolean(state?.guideNumbersEnabled),
+      priceHeatColorsEnabled: Boolean(state?.priceHeatColorsEnabled),
       minimalViewEnabled: Boolean(state?.minimalViewEnabled),
       layoutMode: state?.layoutMode || "list",
       items: (page?.items || []).map((entry) => ({
@@ -1083,7 +1105,6 @@
     const minimalViewEnabled = Boolean(state?.minimalViewEnabled);
     const isGridLayout = state?.layoutMode === "grid";
     const useCompactActions = minimalViewEnabled || isGridLayout;
-    const showCornerTools = !useCompactActions;
     const rashnuSearchQuery = String(item.title || "").trim();
     const imageMarkup = item.imageUrl
       ? `<img src="${escapeHtml(item.imageUrl)}" alt="" data-thumb loading="lazy" referrerpolicy="no-referrer">`
@@ -1091,12 +1112,19 @@
     const sourceExtraMarkup = sourcePriceVisible
       ? buildPriceExtraMarkup(item.displayDiscountPercent, item.displayOriginalPriceText, language)
       : "";
+    const priceHeatRankMap = computePriceHeatRankMap({
+      item,
+      matchBySite,
+      visibleProviderSites,
+      priceHeatColorsEnabled: Boolean(state?.priceHeatColorsEnabled)
+    });
     const providerPriceBoxesMarkup = visibleProviderSites
       .map((site) => {
         const isSource = site === item.sourceSite;
         const siteLabel = siteLabelFor(site, language);
         const siteIcon = siteIconFor(site);
         const siteMatch = isSource ? null : matchBySite[site];
+        const priceValue = isSource ? item.displayPriceValue : siteMatch?.targetPriceValue;
         const siteSearchEnabled = targetSites.includes(site);
         const siteStatus = isSource
           ? null
@@ -1127,13 +1155,16 @@
               )}</span>`
             : "";
         const boxTag = providerProductUrl ? "a" : "div";
+        const heatRank = priceHeatRankMap.get(site);
+        const heatClass = Number.isFinite(heatRank) ? "price-box--heat" : "";
+        const heatStyle = Number.isFinite(heatRank) ? ` style="--price-heat-rank:${escapeHtml(String(heatRank))};"` : "";
         const boxLinkAttributes = providerProductUrl
           ? ` href="${escapeHtml(providerProductUrl)}" target="_blank" rel="noreferrer" title="${escapeHtml(
               t(language, "openTargetHint", { site: siteLabel })
             )}" aria-label="${escapeHtml(t(language, "openTargetHint", { site: siteLabel }))}"`
           : "";
         return `
-          <${boxTag} class="price-box ${providerProductUrl ? "price-box--link" : ""}" data-provider-site="${escapeHtml(site)}"${boxLinkAttributes}>
+          <${boxTag} class="price-box ${providerProductUrl ? "price-box--link" : ""} ${heatClass}" data-provider-site="${escapeHtml(site)}" data-price-value="${Number.isFinite(priceValue) ? escapeHtml(String(priceValue)) : ""}"${heatStyle}${boxLinkAttributes}>
             <div class="price-main">
               <span class="price-value ${isLoadingPrice ? "price-value--loading" : ""}">${priceMarkup}</span>
               <div class="price-meta">
@@ -1191,12 +1222,6 @@
           <a class="action-button action-button--icon" data-role="google-link" href="${escapeHtml(googleUrl)}" target="_blank" rel="noreferrer" title="${escapeHtml(translation.googleHint)}" aria-label="${escapeHtml(translation.googleHint)}">
             <span class="action-icon action-icon--google" aria-hidden="true">${buildGoogleIconMarkup()}</span>
           </a>
-          <button class="action-button action-button--icon" type="button" data-item-action="locate-item" data-role="locate-button-inline" data-source-id="${escapeHtml(item.sourceId)}" title="${escapeHtml(translation.locateItemHint)}" aria-label="${escapeHtml(translation.locateItemHint)}">
-            <span class="action-icon action-icon--locate" aria-hidden="true">${buildLocateIconMarkup()}</span>
-          </button>
-          <button class="action-button action-button--icon" type="button" data-item-action="reload-item" data-role="reload-button-inline" data-source-id="${escapeHtml(item.sourceId)}" title="${escapeHtml(translation.reloadAllHint)}" aria-label="${escapeHtml(translation.reloadAllHint)}">
-            <span class="action-icon action-icon--reload" aria-hidden="true">${buildReloadIconMarkup()}</span>
-          </button>
         </div>`
       : `
         <div class="item-actions">
@@ -1215,14 +1240,6 @@
 
     return `
       <article class="item-card ${entry.isVisible ? "is-visible" : ""}" data-source-id="${escapeHtml(item.sourceId)}" data-item-fingerprint="${escapeHtml(fingerprint)}" data-guide-number="${guideNumber != null ? escapeHtml(String(guideNumber)) : ""}">
-        ${
-          showCornerTools
-            ? `<div class="item-tools">
-          <button class="icon-button item-tool" data-item-action="reload-item" data-role="reload-button" data-source-id="${escapeHtml(item.sourceId)}" title="${escapeHtml(translation.reloadAllHint)}" aria-label="${escapeHtml(translation.reloadAllHint)}">${buildReloadIconMarkup()}</button>
-          <button class="icon-button item-tool" data-item-action="locate-item" data-role="locate-button" data-source-id="${escapeHtml(item.sourceId)}" title="${escapeHtml(translation.locateItemHint)}" aria-label="${escapeHtml(translation.locateItemHint)}">${buildLocateIconMarkup()}</button>
-        </div>`
-            : ""
-        }
         <div class="item-top">
           <div class="thumb ${item.imageUrl ? "" : "is-broken"}">
             ${imageMarkup}
@@ -1230,6 +1247,8 @@
           <div class="item-body">
             <div class="meta-row">
               ${guideNumber != null ? `<span class="guide-chip" data-role="guide-number" title="${escapeHtml(guideTooltip)}" aria-label="${escapeHtml(guideTooltip)}">#${escapeHtml(String(guideNumber))}</span>` : `<span class="guide-chip is-empty" data-role="guide-number"></span>`}
+              <button class="icon-button item-tool item-tool--meta" data-item-action="locate-item" data-role="locate-button-inline" data-source-id="${escapeHtml(item.sourceId)}" title="${escapeHtml(translation.locateItemHint)}" aria-label="${escapeHtml(translation.locateItemHint)}">${buildLocateIconMarkup()}</button>
+              <button class="icon-button item-tool item-tool--meta" data-item-action="reload-item" data-role="reload-button-inline" data-source-id="${escapeHtml(item.sourceId)}" title="${escapeHtml(translation.reloadAllHint)}" aria-label="${escapeHtml(translation.reloadAllHint)}">${buildReloadIconMarkup()}</button>
               ${
                 entry?.retryCountMatch
                   ? `<span class="retry-chip" data-role="retry-chip">${escapeHtml(
@@ -1483,10 +1502,12 @@
       sourceId: entry?.item?.sourceId || "",
       title: entry?.item?.title || "",
       price: entry?.item?.displayPriceText || "",
+      priceValue: Number.isFinite(entry?.item?.displayPriceValue) ? Number(entry.item.displayPriceValue) : null,
       originalPrice: entry?.item?.displayOriginalPriceText || "",
       discountPercent: entry?.item?.displayDiscountPercent || "",
       guideNumber: entry?.item?.guideNumber ?? entry?.item?.position ?? -1,
       guideNumbersEnabled: Boolean(state?.guideNumbersEnabled),
+      priceHeatColorsEnabled: Boolean(state?.priceHeatColorsEnabled),
       isVisible: Boolean(entry?.isVisible),
       isLoading: Boolean(entry?.isLoading),
       retryCount: entry?.retryCount || 0,
@@ -1509,6 +1530,7 @@
             status: result?.status || "",
             confidence: Number.isFinite(result?.confidence) ? Number(result.confidence) : null,
             targetPriceText: result?.targetPriceText || "",
+            targetPriceValue: Number.isFinite(result?.targetPriceValue) ? Number(result.targetPriceValue) : null,
             targetOriginalPriceText: result?.targetOriginalPriceText || "",
             targetDiscountPercent: result?.targetDiscountPercent || "",
             targetUrl: result?.targetUrl || "",
@@ -1519,6 +1541,35 @@
       providerSearchEnabled: state?.providerSearchEnabled || {},
       providerPriceVisible: state?.providerPriceVisible || {}
     });
+  }
+
+  function computePriceHeatRankMap({ item, matchBySite, visibleProviderSites, priceHeatColorsEnabled }) {
+    const rankMap = new Map();
+    if (!priceHeatColorsEnabled || !Array.isArray(visibleProviderSites) || visibleProviderSites.length < 2) {
+      return rankMap;
+    }
+    const numericEntries = [];
+    for (const site of visibleProviderSites) {
+      const isSource = site === item?.sourceSite;
+      const siteMatch = isSource ? null : matchBySite?.[site];
+      const rawValue = isSource ? item?.displayPriceValue : siteMatch?.targetPriceValue;
+      const value = Number(rawValue);
+      if (Number.isFinite(value) && value > 0) {
+        numericEntries.push({ site, value });
+      }
+    }
+    if (numericEntries.length < 2) {
+      return rankMap;
+    }
+    const min = Math.min(...numericEntries.map((entry) => entry.value));
+    const max = Math.max(...numericEntries.map((entry) => entry.value));
+    if (!(max > min)) {
+      return rankMap;
+    }
+    for (const entry of numericEntries) {
+      rankMap.set(entry.site, clamp((entry.value - min) / (max - min), 0, 1));
+    }
+    return rankMap;
   }
 
   function buildPriceExtraMarkup(discountPercent, originalPriceText, language) {

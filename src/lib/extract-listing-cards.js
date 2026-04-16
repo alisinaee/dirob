@@ -69,7 +69,8 @@
   const DIGIKALA_ORIGINAL_PRICE_SELECTORS = [
     ".line-through",
     '[class*="line-through"]',
-    '[data-testid="price-before-discount"]'
+    '[data-testid="price-before-discount"]',
+    '[data-testid="price-no-discount"]'
   ];
   const TOROB_CURRENT_PRICE_SELECTORS = [
     '[data-cy="product-price"]',
@@ -2286,6 +2287,9 @@
           })
         : "";
     let discountPercent = pickDiscountPercent(root, discountSelectors);
+    if (!discountPercent && site === "digikala") {
+      discountPercent = pickInlineDiscountPercent(root);
+    }
     const priceValue = normalizeApi.parsePriceValue(priceText || "");
     const originalPriceValue = normalizeApi.parsePriceValue(originalPriceText || "");
 
@@ -2333,6 +2337,28 @@
         if (Number.isFinite(parsed)) {
           return normalizeApi.formatDiscountPercent(parsed);
         }
+      }
+    }
+    return "";
+  }
+
+  function pickInlineDiscountPercent(root) {
+    const percentRegex = /[٪%]/u;
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    let scannedCount = 0;
+    while (scannedCount < 48) {
+      const textNode = walker.nextNode();
+      if (!textNode) {
+        break;
+      }
+      scannedCount += 1;
+      const value = normalizeApi.normalizeWhitespace(textNode.nodeValue || "");
+      if (!value || value.length > 16 || !percentRegex.test(value)) {
+        continue;
+      }
+      const parsed = normalizeApi.parseDiscountPercent(value);
+      if (Number.isFinite(parsed) && parsed > 0 && parsed < 95) {
+        return normalizeApi.formatDiscountPercent(parsed);
       }
     }
     return "";
